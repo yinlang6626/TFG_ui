@@ -147,8 +147,8 @@ class OpenVoiceService:
             # 提取说话人特征
             target_se = se_extractor.get_se(
                 reference_audio,
-                target_dir="processed",
-                tone_color_converter=self.tone_converter
+                vc_model=self.tone_converter,
+                target_dir="processed"
             )
 
             # 保存特征
