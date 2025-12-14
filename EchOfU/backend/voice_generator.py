@@ -145,11 +145,17 @@ class OpenVoiceService:
             print(f"[OpenVoice] 开始提取说话人特征: {speaker_id}")
 
             # 提取说话人特征
-            target_se = se_extractor.get_se(
+            target_se_result = se_extractor.get_se(
                 reference_audio,
                 vc_model=self.tone_converter,
                 target_dir="processed"
             )
+
+            # get_se返回元组(se_tensor, audio_name)，我们只需要张量部分
+            if isinstance(target_se_result, tuple):
+                target_se = target_se_result[0]
+            else:
+                target_se = target_se_result
 
             # 保存特征
             self.save_speaker_feature(speaker_id, reference_audio, target_se)
@@ -268,6 +274,13 @@ class OpenVoiceService:
     def try_melotts_tts(self, text, output_path, base_speaker_key="ZH"):
         """尝试使用MeloTTS生成语音"""
         try:
+            import os
+
+            # ToDo : Mac上改为了CPU，记得改回来
+            # 设置环境变量，强制使用CPU，避免MPS问题
+            os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '0'
+            os.environ['CUDA_VISIBLE_DEVICES'] = ''
+
             from melo.api import TTS
 
             # 根据base_speaker_key确定语言
@@ -279,8 +292,8 @@ class OpenVoiceService:
 
             language = language_mapping.get(base_speaker_key, "EN")
 
-            # 初始化MeloTTS
-            model = TTS(language=language, device=self.device)
+            # 强制使用CPU初始化MeloTTS，避免MPS相关错误
+            model = TTS(language=language, device='cpu')
             speaker_ids = model.hps.data.spk2id
 
             # 选择说话人ID
