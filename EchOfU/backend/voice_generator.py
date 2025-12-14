@@ -33,9 +33,18 @@ class OpenVoiceService:
             # 设置设备
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
+            # 获取项目根目录路径
+            current_dir = os.getcwd()
+            if current_dir.endswith("/EchOfU"):
+                # 如果当前在EchOfU目录下，使用相对路径
+                project_root = "."
+            else:
+                # 如果在其他目录，使用绝对路径
+                project_root = "EchOfU"
+
             # 配置路径 - 使用V2版本
-            config_path = "EchOfU/OpenVoice/checkpoints_v2/config.json"
-            base_ckpt = "EchOfU/OpenVoice/checkpoints_v2/converter.pth"  # 注意：converter.pth包含完整模型
+            config_path = os.path.join(project_root, "OpenVoice/checkpoints_v2/converter/config.json")
+            base_ckpt = os.path.join(project_root, "OpenVoice/checkpoints_v2/converter/checkpoint.pth")  # V2版本使用checkpoint.pth
 
             # 加载音色转换器（V2中converter.pth是主要模型文件）
             self.tone_converter = ToneColorConverter(config_path, device=self.device)
@@ -195,7 +204,14 @@ class OpenVoiceService:
                 return None
 
             # 2. 加载基础说话人特征
-            source_se_path = f"EchOfU/OpenVoice/checkpoints_v2/base_speakers/ses/{base_speaker_key.lower()}.pth"
+            # 获取项目根目录路径
+            current_dir = os.getcwd()
+            if current_dir.endswith("/EchOfU"):
+                project_root = "."
+            else:
+                project_root = "EchOfU"
+
+            source_se_path = os.path.join(project_root, "OpenVoice/checkpoints_v2/base_speakers/ses", f"{base_speaker_key.lower()}.pth")
             if os.path.exists(source_se_path):
                 source_se = torch.load(source_se_path, map_location=self.device)
             else:
@@ -313,9 +329,16 @@ class OpenVoiceService:
 
     def ensure_directories(self):
         """确保必要目录存在"""
+        # 获取项目根目录路径
+        current_dir = os.getcwd()
+        if current_dir.endswith("/EchOfU"):
+            project_root = "."
+        else:
+            project_root = "EchOfU"
+
         dirs = [
-            "EchOfU/OpenVoice/checkpoints_v2",
-            "EchOfU/OpenVoice/checkpoints/base_speakers",
+            os.path.join(project_root, "OpenVoice/checkpoints_v2"),
+            os.path.join(project_root, "OpenVoice/checkpoints/base_speakers"),
             "models/OpenVoice",
             "static/voices",
             "processed"
@@ -325,10 +348,16 @@ class OpenVoiceService:
 
     def check_models_exist(self):
         """检查模型文件是否存在"""
+        # 获取项目根目录路径
+        current_dir = os.getcwd()
+        if current_dir.endswith("/EchOfU"):
+            project_root = "."
+        else:
+            project_root = "EchOfU"
+
         required_files = [
-            "EchOfU/OpenVoice/checkpoints_v2/config.json",
-            "EchOfU/OpenVoice/checkpoints_v2/checkpoints.pth",
-            "EchOfU/OpenVoice/checkpoints_v2/converter.pth"
+            os.path.join(project_root, "OpenVoice/checkpoints_v2/converter/config.json"),
+            os.path.join(project_root, "OpenVoice/checkpoints_v2/converter/checkpoint.pth")
         ]
 
         missing = [f for f in required_files if not os.path.exists(f)]
@@ -344,8 +373,18 @@ class OpenVoiceService:
         try:
             # V2模型下载地址
             zip_url = "https://myshell-public-repo-host.s3.amazonaws.com/openvoice/checkpoints_v2_0417.zip"
-            zip_path = "EchOfU/OpenVoice/checkpoints_v2_0417.zip"
-            extract_dir = "EchOfU/OpenVoice/"
+
+            # 获取当前工作目录和项目根目录
+            current_dir = os.getcwd()
+            if current_dir.endswith("/EchOfU"):
+                # 如果当前在EchOfU目录下，使用相对路径
+                project_root = "."
+            else:
+                # 如果在其他目录，使用绝对路径
+                project_root = "EchOfU"
+
+            zip_path = os.path.join(project_root, "OpenVoice/checkpoints_v2_0417.zip")
+            extract_dir = os.path.join(project_root, "OpenVoice/")
 
             print(f"[OpenVoice] 下载V2检查点压缩包...")
             self.download_with_progress(zip_url, zip_path)
