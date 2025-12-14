@@ -274,7 +274,7 @@ class TestOpenVoiceService(unittest.TestCase):
         service = OpenVoiceService()
 
         # Mock requests
-        with patch('voice_generator.requests.get') as mock_get:
+        with patch('requests.get') as mock_get:
             mock_response = Mock()
             mock_response.raise_for_status.return_value = None
             mock_response.headers = {'content-length': '1024'}
