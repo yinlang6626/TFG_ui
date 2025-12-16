@@ -2,10 +2,6 @@ import os
 import time
 import subprocess
 import shutil
-import voice_generator
-from EchOfU.MeloTTS.test.test_base_model_tts_package_from_S3 import speaker
-from EchOfU.OpenVoice.demo_part3 import speaker_id
-from EchOfU.backend.voice_generator import OpenVoiceService
 from voice_generator import OpenVoiceService
 
 

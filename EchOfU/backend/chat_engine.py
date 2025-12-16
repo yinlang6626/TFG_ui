@@ -1,7 +1,7 @@
 import speech_recognition as sr
 from zhipuai import ZhipuAI
 
-from EchOfU.backend.voice_generator import OpenVoiceService
+from voice_generator import OpenVoiceService
 
 
 def chat_response(data):
