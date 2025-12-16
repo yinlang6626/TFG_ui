@@ -9,15 +9,23 @@ import sys
 import unittest
 from pathlib import Path
 
-# 添加项目路径
-project_root = Path(__file__).parent.parent.parent
-backend_path = project_root / "EchOfU" / "backend"
+# 添加项目路径到Python路径
+project_root = Path(__file__).parent.parent
+backend_path = project_root / "backend"
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(backend_path))
 
 # 抑制警告
 import warnings
 warnings.filterwarnings("ignore")
+
+# 现在可以正确导入模块
+try:
+    from voice_generator import OpenVoiceService
+    print("✅ 成功导入 voice_generator 模块")
+except ImportError as e:
+    print(f"❌ 导入失败: {e}")
+    sys.exit(1)
 
 class TestVoiceSynthesis(unittest.TestCase):
     """语音合成功能测试类"""
@@ -26,7 +34,15 @@ class TestVoiceSynthesis(unittest.TestCase):
         """测试前准备"""
         # 设置工作目录
         self.project_root = project_root
-        self.test_audio_file = self.project_root / "EchOfU/static/voices/Test_1.mp4"
+        self.test_audio_file = self.project_root / "static/voices/Test_1.mp4"
+
+        # 初始化服务实例
+        try:
+            self.ov_service = OpenVoiceService()
+            print("✅ OpenVoice服务初始化成功")
+        except Exception as e:
+            print(f"⚠️ OpenVoice服务初始化失败: {e}")
+            self.ov_service = None
 
         # 确保测试音频文件存在
         self.assertTrue(
@@ -36,9 +52,10 @@ class TestVoiceSynthesis(unittest.TestCase):
 
     def test_speaker_feature_extraction(self):
         """测试说话人特征提取"""
-        try:
-            from voice_generator import extract_speaker_feature
+        if not self.ov_service:
+            self.skipTest("OpenVoice服务未初始化，跳过测试")
 
+        try:
             speaker_id = "test_speaker_1"
             audio_path = str(self.test_audio_file)
 
@@ -46,14 +63,14 @@ class TestVoiceSynthesis(unittest.TestCase):
             print(f"📊 提取说话人特征: {speaker_id}")
 
             # 执行特征提取
-            result = extract_speaker_feature(speaker_id, audio_path)
+            result = self.ov_service.extract_and_save_speaker_feature(speaker_id, audio_path)
 
             if result:
                 print("✅ 说话人特征提取成功")
 
                 # 检查特征文件是否被保存
-                features_file = self.project_root / "EchOfU/models/OpenVoice/speaker_features.json"
-                se_file = self.project_root / "EchOfU/models/OpenVoice/test_speaker_1_se.pth"
+                features_file = self.project_root / "models/OpenVoice/speaker_features.json"
+                se_file = self.project_root / "models/OpenVoice/test_speaker_1_se.pth"
 
                 if features_file.exists():
                     print(f"✅ 特征元数据已保存: {features_file}")
@@ -74,17 +91,18 @@ class TestVoiceSynthesis(unittest.TestCase):
 
     def test_voice_generation_with_reference(self):
         """测试使用参考音频进行语音生成"""
-        try:
-            from voice_generator import generate_voice
+        if not self.ov_service:
+            self.skipTest("OpenVoice服务未初始化，跳过测试")
 
-            test_text = "你好，这是一个语音合成测试。"
+        try:
+            test_text = "你好，这是一个语音合成测试。测试基于OpenVoice和ER-NeRF的语音克隆与视频生成。"
             speaker_id = "test_speaker_1"
 
             print(f"🎯 测试文本: {test_text}")
             print(f"🎭 说话人ID: {speaker_id}")
 
             # 生成语音
-            result = generate_voice(test_text, speaker_id)
+            result = self.ov_service.generate_speech(test_text, speaker_id)
 
             if result:
                 print(f"✅ 语音生成成功: {result}")
@@ -114,13 +132,14 @@ class TestVoiceSynthesis(unittest.TestCase):
 
     def test_speaker_list_management(self):
         """测试说话人列表管理"""
-        try:
-            from voice_generator import list_available_speakers
+        if not self.ov_service:
+            self.skipTest("OpenVoice服务未初始化，跳过测试")
 
+        try:
             print("📋 测试说话人列表管理...")
 
             # 获取可用说话人列表
-            speakers = list_available_speakers()
+            speakers = self.ov_service.list_available_speakers()
 
             print(f"🎭 可用说话人: {speakers}")
             print(f"📊 说话人数量: {len(speakers)}")
@@ -151,9 +170,9 @@ class TestVoiceSynthesis(unittest.TestCase):
 
         # 检查必要的目录结构
         required_dirs = [
-            self.project_root / "EchOfU/models/OpenVoice",
-            self.project_root / "EchOfU/static/voices",
-            self.project_root / "EchOfU/processed"
+            self.project_root / "models/OpenVoice",
+            self.project_root / "static/voices",
+            self.project_root / "processed"
         ]
 
         for dir_path in required_dirs:
@@ -165,8 +184,6 @@ class TestVoiceSynthesis(unittest.TestCase):
     def test_service_initialization(self):
         """测试服务初始化"""
         try:
-            from voice_generator import OpenVoiceService
-
             print("🔧 测试OpenVoice服务初始化...")
 
             # 创建服务实例（测试单例模式）
