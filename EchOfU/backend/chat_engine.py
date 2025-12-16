@@ -1,9 +1,8 @@
-import os
 import speech_recognition as sr
-import time
 from zhipuai import ZhipuAI
-from video_generator import generate_video
-from voice_generator import generate_voice, list_available_speakers
+
+from EchOfU.backend.voice_generator import OpenVoiceService
+
 
 def chat_response(data):
     """
@@ -36,8 +35,11 @@ def chat_response(data):
     # ToDo : 看老师的前端设计，这里应该增加一个语音克隆选项（也就是说用户可以选择之前已经克隆过的语音/重新克隆语音/克隆自己的语音），这里需要设计一下
 
     # ToDo : 增加用户选择语音的选项（前端需要实现）
+
+    ov=OpenVoiceService
+
     # 列出可用的语音
-    available_speakers = list_available_speakers()
+    available_speakers = ov.list_available_speakers()
     print(f"[backend.chat_engine] 可用说话人: {available_speakers}")
 
     # 默认第一个
@@ -50,7 +52,8 @@ def chat_response(data):
     print(f"[backend.chat_engine] 使用说话人: {speaker_id}")
 
     # OpenVoice语音合成
-    voice_path = generate_voice(ai_response_text, speaker_id)
+
+    voice_path = ov.generate_speech(ai_response_text, speaker_id)
 
     print(f"[backend.chat_engine] OpenVoice语音合成完成: {voice_path}")
 
