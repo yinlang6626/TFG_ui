@@ -564,12 +564,6 @@ class OpenVoiceService:
                 print("[OpenVoice]  输入文本过长，最大支持1000字符")
                 return None
 
-            if not self.tone_converter:
-                print("[OpenVoice]  音色转换器未初始化，无法生成语音")
-                return None
-
-            print("[OpenVoice] ✅ 音色转换器已就绪")
-
             # 生成输出文件名 - 使用PathManager
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             output_path = self.path_manager.get_output_voice_path(timestamp)
@@ -582,6 +576,10 @@ class OpenVoiceService:
 
             if speaker_id and speaker_id in self.feature_manager.speaker_features:
                 # 使用说话人克隆（V2方式）
+                if not self.tone_converter:
+                    print("[OpenVoice] ❌ 语音克隆需要音色转换器，但转换器未初始化")
+                    return None
+
                 print(f"[OpenVoice] 🎭 使用说话人克隆模式: {speaker_id}")
                 print(f"[OpenVoice] 可用说话人: {list(self.feature_manager.speaker_features.keys())}")
                 return self._clone_voice_with_cached_feature(text, speaker_id, output_path)
@@ -691,8 +689,23 @@ class OpenVoiceService:
     def synthesize_speech(self, text, output_path, speaker="default", language="Chinese"):
         """快速语音合成 - 兼容性方法"""
         try:
+            # 将language参数映射到MeloTTS的base_speaker_key格式
+            language_to_speaker_key = {
+                "Chinese": "ZH",
+                "English": "EN",
+                "Spanish": "ES",
+                "French": "FR",
+                "Japanese": "JP",
+                "Korean": "KR",
+                "default": "ZH"
+            }
+
+            base_speaker_key = language_to_speaker_key.get(language, speaker.upper() if speaker.upper() in ["ZH", "EN", "ES", "FR", "JP", "KR"] else "ZH")
+
+            print(f"[OpenVoice] synthesize_speech: language={language} -> base_speaker_key={base_speaker_key}, speaker={speaker}")
+
             # 使用MeloTTS作为基础生成
-            return self._generate_base_speech(text, output_path, "ZH")
+            return self._generate_base_speech(text, output_path, base_speaker_key)
 
         except Exception as e:
             print(f"[OpenVoice] 语音合成失败: {e}")
@@ -733,12 +746,15 @@ def generate_voice(text, speaker_id=None):
         openvoice_service = OpenVoiceService()
         print(f"[OpenVoice] 服务实例ID: {id(openvoice_service)}")
 
-        # 检查模型是否可用（主要检查音色转换器）
-        if not openvoice_service.tone_converter:
-            print("[OpenVoice] ❌ 音色转换器未正确加载，请检查模型文件")
-            return None
-
-        print("[OpenVoice] ✅ 音色转换器已就绪，开始生成语音")
+        # 智能检查：只有需要语音克隆时才检查音色转换器
+        if speaker_id and speaker_id in openvoice_service.feature_manager.speaker_features:
+            if not openvoice_service.tone_converter:
+                print("[OpenVoice] ❌ 语音克隆需要音色转换器，但转换器未初始化")
+                print("[OpenVoice] 💡 建议：请检查OpenVoice模型文件是否正确加载")
+                return None
+            print("[OpenVoice] ✅ 语音克隆模式，音色转换器已就绪")
+        else:
+            print("[OpenVoice] ✅ 基础TTS模式，无需音色转换器")
 
         # 生成语音（V2架构）
         print("[OpenVoice] 调用内部语音生成接口...")
