@@ -358,18 +358,32 @@ class VoiceGenerator:
 
     def __init__(self, path_manager):
         self.path_manager = path_manager
+        self._melotts_models = {}  # 缓存MeloTTS模型实例
+
+    def _get_or_create_melotts_model(self, language, device='cpu'):
+        """获取或创建MeloTTS模型实例（带缓存）"""
+        cache_key = f"{language}_{device}"
+        if cache_key not in self._melotts_models:
+            print(f"[VoiceGenerator] 初始化MeloTTS模型 (语言: {language}, 设备: {device})...")
+            from melo.api import TTS
+            self._melotts_models[cache_key] = TTS(language=language, device=device)
+            print(f"[VoiceGenerator] MeloTTS模型初始化成功并缓存")
+        return self._melotts_models[cache_key]
 
     def generate_with_melotts_tts(self, text, output_path, base_speaker_key="ZH"):
         """尝试使用MeloTTS生成语音"""
-        try:
-            import os
+        # 保存原始环境变量
+        import os
+        original_mps_fallback = os.environ.get('PYTORCH_ENABLE_MPS_FALLBACK')
+        original_cuda_devices = os.environ.get('CUDA_VISIBLE_DEVICES')
 
+        try:
             print(f"[VoiceGenerator] 开始使用MeloTTS生成语音...")
             print(f"[VoiceGenerator] 输入文本: {text}")
             print(f"[VoiceGenerator] 输出路径: {output_path}")
             print(f"[VoiceGenerator] 说话人key: {base_speaker_key}")
 
-            # 设置环境变量，强制使用CPU，避免MPS问题
+            # 临时设置环境变量，强制使用CPU，避免MPS问题
             print(f"[VoiceGenerator] 设置环境变量强制使用CPU...")
             os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '0'
             os.environ['CUDA_VISIBLE_DEVICES'] = ''
@@ -390,9 +404,8 @@ class VoiceGenerator:
             language = language_mapping.get(base_speaker_key, "EN")
             print(f"[VoiceGenerator] 映射后语言: {language}")
 
-            print(f"[VoiceGenerator] 正在初始化MeloTTS模型 (语言: {language}, 设备: cpu)...")
-            model = TTS(language=language, device='cpu')
-            print(f"[VoiceGenerator] MeloTTS模型初始化成功")
+            # 使用缓存的模型
+            model = self._get_or_create_melotts_model(language, 'cpu')
 
             speaker_ids = model.hps.data.spk2id
             print(f"[VoiceGenerator] 可用说话人: {dict(speaker_ids)}")
@@ -433,6 +446,19 @@ class VoiceGenerator:
             print(f"[VoiceGenerator] 错误堆栈:")
             traceback.print_exc()
             return False
+        finally:
+            # 恢复原始环境变量
+            if original_mps_fallback is not None:
+                os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = original_mps_fallback
+            else:
+                os.environ.pop('PYTORCH_ENABLE_MPS_FALLBACK', None)
+
+            if original_cuda_devices is not None:
+                os.environ['CUDA_VISIBLE_DEVICES'] = original_cuda_devices
+            else:
+                os.environ.pop('CUDA_VISIBLE_DEVICES', None)
+
+            print(f"[VoiceGenerator] 已恢复原始环境变量设置")
 
 
 class OpenVoiceService:
@@ -528,19 +554,32 @@ class OpenVoiceService:
         print(f"[OpenVoice] 说话人ID: {speaker_id if speaker_id else 'None (使用基础TTS)'}")
 
         try:
-            if not self.tone_converter:
-                print("[OpenVoice] ❌ 音色转换器未初始化，无法生成语音")
+            # 输入验证
+            if not text or not text.strip():
+                print("[OpenVoice]  输入文本为空")
                 return None
 
-            print("[OpenVoice] ✅ 音色转换器已就绪")
+            text = text.strip()
+            if len(text) > 1000:  # 假设最大文本长度
+                print("[OpenVoice]  输入文本过长，最大支持1000字符")
+                return None
 
             # 生成输出文件名 - 使用PathManager
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             output_path = self.path_manager.get_output_voice_path(timestamp)
+
+            # 确保输出目录存在
+            output_dir = os.path.dirname(output_path)
+            os.makedirs(output_dir, exist_ok=True)
+
             print(f"[OpenVoice] 输出文件路径: {output_path}")
 
             if speaker_id and speaker_id in self.feature_manager.speaker_features:
                 # 使用说话人克隆（V2方式）
+                if not self.tone_converter:
+                    print("[OpenVoice] ❌ 语音克隆需要音色转换器，但转换器未初始化")
+                    return None
+
                 print(f"[OpenVoice] 🎭 使用说话人克隆模式: {speaker_id}")
                 print(f"[OpenVoice] 可用说话人: {list(self.feature_manager.speaker_features.keys())}")
                 return self._clone_voice_with_cached_feature(text, speaker_id, output_path)
@@ -560,6 +599,7 @@ class OpenVoiceService:
 
     def _clone_voice_with_cached_feature(self, text, speaker_id, output_path, base_speaker_key="ZH"):
         """使用缓存的说话人特征进行语音克隆"""
+        temp_audio = None
         try:
             if not self.tone_converter:
                 return None
@@ -592,16 +632,20 @@ class OpenVoiceService:
                 message=encode_message
             )
 
-            # 4. 清理临时文件
-            if os.path.exists(temp_audio):
-                os.remove(temp_audio)
-
             print(f"[OpenVoice] 使用V2模型和缓存特征生成语音: {speaker_id}")
             return output_path
 
         except Exception as e:
             print(f"[OpenVoice] 使用缓存特征生成语音失败: {e}")
             return None
+        finally:
+            # 4. 确保清理临时文件（异常安全）
+            if temp_audio and os.path.exists(temp_audio):
+                try:
+                    os.remove(temp_audio)
+                    print(f"[OpenVoice] 清理临时文件: {temp_audio}")
+                except Exception as cleanup_error:
+                    print(f"[OpenVoice] 清理临时文件失败: {cleanup_error}")
 
     def _generate_base_speech(self, text, output_path, base_speaker_key="ZH"):
         """生成基础语音（支持MeloTTS）"""
@@ -645,8 +689,23 @@ class OpenVoiceService:
     def synthesize_speech(self, text, output_path, speaker="default", language="Chinese"):
         """快速语音合成 - 兼容性方法"""
         try:
+            # 将language参数映射到MeloTTS的base_speaker_key格式
+            language_to_speaker_key = {
+                "Chinese": "ZH",
+                "English": "EN",
+                "Spanish": "ES",
+                "French": "FR",
+                "Japanese": "JP",
+                "Korean": "KR",
+                "default": "ZH"
+            }
+
+            base_speaker_key = language_to_speaker_key.get(language, speaker.upper() if speaker.upper() in ["ZH", "EN", "ES", "FR", "JP", "KR"] else "ZH")
+
+            print(f"[OpenVoice] synthesize_speech: language={language} -> base_speaker_key={base_speaker_key}, speaker={speaker}")
+
             # 使用MeloTTS作为基础生成
-            return self._generate_base_speech(text, output_path, "ZH")
+            return self._generate_base_speech(text, output_path, base_speaker_key)
 
         except Exception as e:
             print(f"[OpenVoice] 语音合成失败: {e}")
@@ -663,158 +722,3 @@ class OpenVoiceService:
     def download_openvoice_models(self):
         """下载OpenVoice V2预训练模型（兼容性方法）"""
         return self.model_manager._download_models()
-
-
-def generate_voice(text, speaker_id=None):
-    """
-    统一的语音生成接口（V2版本）
-
-    Args:
-        text (str): 要合成的文本
-        speaker_id (str, optional): 说话人ID，如果为None则使用基础TTS
-
-    Returns:
-        str: 生成的语音文件路径，失败返回None
-    """
-    print("[OpenVoice] ===============================================")
-    print("[OpenVoice] 外部接口 - 语音生成请求")
-    print(f"[OpenVoice] 输入参数: 文本='{text}', 说话人ID={speaker_id}")
-    print("==============================================")
-
-    try:
-        # 获取OpenVoice服务实例
-        print("[OpenVoice] 获取OpenVoice服务实例...")
-        openvoice_service = OpenVoiceService()
-        print(f"[OpenVoice] 服务实例ID: {id(openvoice_service)}")
-
-        # 检查模型是否可用（主要检查音色转换器）
-        if not openvoice_service.tone_converter:
-            print("[OpenVoice] ❌ 音色转换器未正确加载，请检查模型文件")
-            return None
-
-        print("[OpenVoice] ✅ 音色转换器已就绪，开始生成语音")
-
-        # 生成语音（V2架构）
-        print("[OpenVoice] 调用内部语音生成接口...")
-        result_path = openvoice_service.generate_speech(text, speaker_id)
-
-        if result_path and os.path.exists(result_path):
-            file_size = os.path.getsize(result_path)
-            print(f"[OpenVoice] ✅ 外部接口 - 语音生成成功")
-            print(f"[OpenVoice] 输出文件: {result_path}")
-            print(f"[OpenVoice] 文件大小: {file_size} bytes")
-            print("==============================================")
-            return result_path
-        else:
-            print("[OpenVoice] ❌ 外部接口 - 语音生成失败")
-            print("==============================================")
-            return None
-
-    except Exception as e:
-        print(f"[OpenVoice] ❌ 外部接口 - 语音生成异常: {type(e).__name__}: {e}")
-        import traceback
-        print(f"[OpenVoice] 错误详情:")
-        traceback.print_exc()
-        print("==============================================")
-        return None
-
-
-def extract_speaker_feature(speaker_id, reference_audio):
-    """
-    提取说话人特征
-
-    Args:
-        speaker_id (str): 说话人唯一标识
-        reference_audio (str): 参考音频文件路径
-
-    Returns:
-        bool: 成功返回True，失败返回False
-    """
-    try:
-        openvoice_service = OpenVoiceService()
-        return openvoice_service.extract_and_save_speaker_feature(speaker_id, reference_audio)
-    except Exception as e:
-        print(f"[OpenVoice] 提取说话人特征异常: {e}")
-        return False
-
-
-def list_available_speakers():
-    """
-    列出所有可用的说话人
-
-    Returns:
-        list: 说话人ID列表
-    """
-    try:
-        openvoice_service = OpenVoiceService()
-        return openvoice_service.list_available_speakers()
-    except Exception as e:
-        print(f"[OpenVoice] 列出说话人失败: {e}")
-        return []
-
-
-def extract_trait_from_audio(data):
-    """
-    提取说话人特征(符合前端设计的接口）
-
-    Args:
-        data (dict): 包含ref_video和speaker_id的字典
-
-    Returns:
-        bool: 成功返回True，失败返回False
-    """
-    try:
-        video_path = data['ref_video']
-        print("[backend.model_trainer] 开始OpenVoice语音特征提取...")
-
-        extracted_audio = None
-        if video_path.endswith(".mp4"):
-            # 从视频中提取音频，使用AudioProcessor
-            audio_processor = AudioProcessor()
-            extracted_audio = audio_processor.extract_audio_from_video(video_path)
-
-        if not extracted_audio:
-            print("[backend.model_trainer] 音频提取失败，无法进行特征提取")
-            return False
-
-        # ToDo : 可以让用户自定义语音名字 （需要在前端加上speaker_id选项)
-
-        # 获取或生成说话人ID
-        speaker_id = data.get("speaker_id")
-        if not speaker_id:
-            # 生成的说话人ID
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            speaker_id = f"user_{timestamp}"
-
-        # 使用重构后的接口提取并保存说话人特征
-        success = extract_speaker_feature(speaker_id, extracted_audio)
-
-        if success:
-            print(f"[backend.model_trainer] OpenVoice说话人特征提取成功: {speaker_id}")
-
-            # 保存训练信息
-            model_info = {
-                "model_type": "OpenVoice",
-                "speaker_id": speaker_id,
-                "reference_video": video_path,
-                "extracted_audio": extracted_audio,
-                "training_time": datetime.now().isoformat(),
-                "status": "completed"
-            }
-
-            # 使用PathManager获取正确的项目根目录路径
-            path_manager = PathManager()
-            info_path = path_manager.get_model_path("models/OpenVoice", f"{speaker_id}_info.json")
-            with open(info_path, 'w', encoding='utf-8') as f:
-                json.dump(model_info, f, indent=2, ensure_ascii=False)
-
-            print(f"[backend.model_trainer] 模型信息已保存: {info_path}")
-            return True
-
-        else:
-            print("[backend.model_trainer] OpenVoice说话人特征提取失败")
-            return False
-
-    except Exception as e:
-        print(f"[backend.model_trainer] OpenVoice训练失败: {e}")
-        return False
