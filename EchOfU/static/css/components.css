@@ -40,8 +40,30 @@
 .neon-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-strong); }
 .neon-btn:active { transform: translateY(0); }
 
-.neon-btn-glow { animation: glow-pulse 3s infinite alternate; }
+.neon-btn-glow {
+    background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple)) !important;
+    color: black !important;
+    border: none !important;
+    animation: glow-pulse 3s infinite alternate;
+}
+
+.neon-btn-glow:hover {
+    box-shadow: 0 0 20px rgba(43, 140, 255, 0.5) !important;
+}
+
 @keyframes glow-pulse { 0%,100%{ box-shadow: var(--shadow-soft);} 50%{ box-shadow: var(--shadow-strong);} }
+
+/* 辅助按钮样式 */
+.neon-btn.action-btn {
+    background: rgba(43, 140, 255, 0.1) !important;
+    border: 1px solid rgba(43, 140, 255, 0.3) !important;
+    color: var(--neon-blue) !important;
+}
+
+.neon-btn.action-btn:hover {
+    background: rgba(43, 140, 255, 0.2) !important;
+    box-shadow: 0 0 10px rgba(43, 140, 255, 0.3) !important;
+}
 
 /* 选择态按钮 */
 .neon-btn.selected {

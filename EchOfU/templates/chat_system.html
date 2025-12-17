@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/system.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+
+    <!-- JavaScript模块 -->
+    <script src="{{ url_for('static', filename='js/modules/audio-manager.js') }}"></script>
     
     <style>
         .chat-container {
@@ -264,10 +267,23 @@
         }
         
         .start-chat-btn {
-            width: 100%;
+            flex: 2;
             padding: var(--space-3);
             font-size: 1.125rem;
             margin-top: var(--space-4);
+        }
+
+        .button-row {
+            display: flex;
+            gap: var(--space-2);
+            align-items: center;
+            margin-top: var(--space-4);
+        }
+
+        .button-row .action-btn {
+            flex: 1;
+            padding: var(--space-3);
+            font-size: 0.875rem;
         }
         
         .time-estimate {
@@ -378,16 +394,7 @@
             border-radius: 3px;
         }
         
-        .neon-btn-glow {
-            background: linear-gradient(135deg, #00c6ff, #7e57c2);
-            color: white;
-            border: none;
-        }
-        
-        .neon-btn-glow:hover {
-            box-shadow: 0 0 20px rgba(0, 198, 255, 0.5);
-        }
-        
+          
         .floating-card {
             box-shadow: 0 8px 32px rgba(0, 198, 255, 0.1);
         }
@@ -560,10 +567,16 @@
                     </div>
                 </div>
                 
-                <button class="neon-btn neon-btn-glow start-chat-btn" id="startChatBtn">
-                    开始对话
-                </button>
-                
+                <div class="button-row">
+                    <button class="neon-btn neon-btn-glow start-chat-btn" id="startChatBtn">
+                        开始对话
+                    </button>
+
+                    <button class="neon-btn action-btn" id="refreshBtn">
+                        刷新音频列表
+                    </button>
+                </div>
+
                 <div class="time-estimate">
                     预计生成时间：10-30秒
                 </div>
@@ -849,37 +862,63 @@
             }
         });
         
-        // 从后端加载克隆音频列表
-        // ToDO : 实现具体加载逻辑
-        async function loadClonedAudioList() {
+        // 初始化音频选择框
+        async function initializeAudioSelects() {
             try {
-                const response = await fetch('/api/cloned-audios');
-                const result = await response.json();
-
-                if (result.status === 'success' && result.audios) {
-                    const voiceCloneSelect = document.getElementById('voiceCloneSelect');
-                    voiceCloneSelect.innerHTML = '<option value="">请选择克隆音频</option>';
-                    result.audios.forEach(audio => {
-                        const option = document.createElement('option');
-                        option.value = audio.id;
-                        option.textContent = audio.id;
-                        voiceCloneSelect.appendChild(option);
-                    });
+                // 初始化语音克隆选择框 - 强制刷新以获取最新数据
+                const voiceCloneSelect = document.getElementById('voiceCloneSelect');
+                if (voiceCloneSelect) {
+                    await window.AudioUtils.fillAudioSelect('#voiceCloneSelect', '请选择克隆音频', '', true);
                 }
             } catch (error) {
-                console.error('加载克隆音频列表失败:', error);
-                // 提供一些默认选项
-                const voiceCloneSelect = document.getElementById('voiceCloneSelect');
-                voiceCloneSelect.innerHTML = '<option value="">请选择克隆音频</option>' +
-                                       '<option value="audio_001">audio_001</option>' +
-                                       '<option value="audio_002">audio_002</option>';
+                console.error('初始化音频选择框失败:', error);
             }
         }
+
+        // 强制刷新音频数据
+        async function refreshAudioData() {
+            try {
+                console.log('正在刷新音频数据...');
+                await window.AudioUtils.refreshAllAudioSelects();
+                console.log('音频数据刷新完成');
+
+                // 显示刷新成功提示
+                const btn = document.getElementById('refreshBtn');
+                if (btn) {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '✅ 已刷新';
+                    btn.style.color = 'var(--neon-green)';
+
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.color = '';
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('刷新音频数据失败:', error);
+
+                // 显示刷新失败提示
+                const btn = document.getElementById('refreshBtn');
+                if (btn) {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '❌ 刷新失败';
+                    btn.style.color = 'var(--neon-red)';
+
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.color = '';
+                    }, 2000);
+                }
+            }
+        }
+
+        // 刷新按钮事件监听器
+        document.getElementById('refreshBtn').addEventListener('click', refreshAudioData);
 
         // 初始化
         window.addEventListener('load', () => {
             initWaveform();
-            loadClonedAudioList();
+            initializeAudioSelects();
             setInterval(updateSystemStatus, 5000);
             updateSystemStatus();
         });

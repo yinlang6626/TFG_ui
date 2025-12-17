@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/system.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+
+    <!-- JavaScript模块 -->
+    <script src="{{ url_for('static', filename='js/modules/audio-manager.js') }}"></script>
     
     <style>
         /* 只保留页面特有的样式 */
@@ -71,9 +74,21 @@
         }
         
         .generate-btn {
-            width: 100%;
+            flex: 2;
             padding: var(--space-3);
             font-size: 1.125rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: var(--space-2);
+            align-items: center;
+        }
+
+        .button-row .action-btn {
+            flex: 1;
+            padding: var(--space-3);
+            font-size: 0.875rem;
         }
         
         .progress-section {
@@ -213,10 +228,16 @@
                     </div>
                     
                     <div class="generate-section">
-                        <button type="submit" class="neon-btn neon-btn-glow generate-btn">
-                                    开始生成视频
-                                </button>
-                        
+                        <div class="button-row">
+                            <button type="submit" class="neon-btn neon-btn-glow generate-btn">
+                                开始生成视频
+                            </button>
+
+                            <button type="button" class="neon-btn action-btn" id="refreshBtn">
+                                刷新音频列表
+                            </button>
+                        </div>
+
                         <div class="progress-section" id="progressSection">
                             <div class="progress-info">
                                 <span class="progress-status" id="progressStatus">生成中...</span>
@@ -245,32 +266,61 @@
         const refAudioId = document.getElementById('refAudioId');
         const videoPreview = document.getElementById('videoPreview');
 
-        // 从后端加载克隆音频列表
-        async function loadClonedAudioList() {
+        // 初始化音频选择框
+        async function initializeAudioSelects() {
             try {
-                const response = await fetch('/api/cloned-audios');
-                const result = await response.json();
-
-                if (result.status === 'success' && result.audios) {
-                    refAudioId.innerHTML = '<option value="">请选择克隆音频</option>';
-                    result.audios.forEach(audio => {
-                        const option = document.createElement('option');
-                        option.value = audio.id;
-                        option.textContent = audio.id;
-                        refAudioId.appendChild(option);
-                    });
+                // 初始化参考音频选择框 - 强制刷新以获取最新数据
+                const refAudioSelect = document.getElementById('refAudioId');
+                if (refAudioSelect) {
+                    await window.AudioUtils.fillAudioSelect('#refAudioId', '请选择克隆音频', '', true);
                 }
             } catch (error) {
-                console.error('加载克隆音频列表失败:', error);
-                // 提供一些默认选项
-                refAudioId.innerHTML = '<option value="">请选择克隆音频</option>' +
-                                       '<option value="audio_001">audio_001</option>' +
-                                       '<option value="audio_002">audio_002</option>';
+                console.error('初始化音频选择框失败:', error);
             }
         }
 
-        // 页面加载时获取克隆音频列表
-        document.addEventListener('DOMContentLoaded', loadClonedAudioList);
+        // 强制刷新音频数据
+        async function refreshAudioData() {
+            try {
+                console.log('正在刷新音频数据...');
+                await window.AudioUtils.refreshAllAudioSelects();
+                console.log('音频数据刷新完成');
+
+                // 显示刷新成功提示
+                const btn = document.getElementById('refreshBtn');
+                if (btn) {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '✅ 已刷新';
+                    btn.style.color = 'var(--neon-green)';
+
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.color = '';
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('刷新音频数据失败:', error);
+
+                // 显示刷新失败提示
+                const btn = document.getElementById('refreshBtn');
+                if (btn) {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '❌ 刷新失败';
+                    btn.style.color = 'var(--neon-red)';
+
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.color = '';
+                    }, 2000);
+                }
+            }
+        }
+
+        // 刷新按钮事件监听器
+        document.getElementById('refreshBtn').addEventListener('click', refreshAudioData);
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', initializeAudioSelects);
 
         // 替换预览区域为 video 元素并播放
         function showGeneratedVideo(videoPath) {
