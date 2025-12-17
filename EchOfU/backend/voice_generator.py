@@ -24,6 +24,11 @@ class PathManager:
                 if os.path.exists(os.path.join(current_dir, "OpenVoice")):
                     return current_dir
 
+            # 如果当前目录包含EchOfU子目录，使用它
+            echofu_subdir = os.path.join(current_dir, "EchOfU")
+            if os.path.exists(echofu_subdir) and os.path.exists(os.path.join(echofu_subdir, "OpenVoice")):
+                return echofu_subdir
+
             # 如果已经到达根目录还没找到，返回None
             parent_dir = os.path.dirname(current_dir)
             if parent_dir == current_dir:

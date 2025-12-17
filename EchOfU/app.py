@@ -203,33 +203,41 @@ def audio_clone():
             # 创建OpenVoice服务实例（单例模式）
             ov_service = OpenVoiceService()
 
-            print(f"[音频克隆] 开始处理克隆请求:")
-            print(f"[音频克隆] 原音频路径: {data['original_audio_path']}")
-            print(f"[音频克隆] 目标音频ID: {data['target_audio_id']}")
-
-            # 步骤1：提取说话人特征
-            if not ov_service.extract_and_save_speaker_feature(
-                speaker_id=data['target_audio_id'],
-                reference_audio=data['original_audio_path']
-            ):
-                return jsonify({
-                    'status': 'error',
-                    'message': '说话人特征提取失败'
-                }), 500
-
-            # 步骤2：如果有生成文本，则生成音频；否则只进行特征提取
             if data['generate_text']:
+                # ==================== 生成模式：使用已有特征生成音频 ====================
+                audio_id = data['audio_id']  # 使用音频ID而不是target_audio_id
+                generate_text = data['generate_text']
+
+                print(f"[音频生成] 开始生成音频:")
+                print(f"[音频生成] 音频ID: {audio_id}")
+                print(f"[音频生成] 生成文本: {generate_text}")
+
+                # 直接使用已有特征生成音频
                 generated_audio_path = ov_service.generate_speech(
-                    text=data['generate_text'],
-                    speaker_id=data['target_audio_id']
+                    text=generate_text,
+                    speaker_id=audio_id
                 )
 
                 if generated_audio_path:
                     # 转换为相对路径供前端使用
-                    relative_path = generated_audio_path.replace(os.getcwd(), '').lstrip('/')
+                    # 获取当前Flask应用文件所在目录作为基准
+                    current_dir = os.path.dirname(os.path.abspath(__file__))
+                    if generated_audio_path.startswith(current_dir):
+                        relative_path = generated_audio_path[len(current_dir):].lstrip('/\\')
+                    else:
+                        # 如果不是以当前目录开头，直接使用文件名部分
+                        relative_path = os.path.basename(generated_audio_path)
+                        # 如果文件在static/voices下，保留路径
+                        if 'static/voices' in generated_audio_path:
+                            parts = generated_audio_path.split('static/voices')
+                            if len(parts) > 1:
+                                relative_path = f"static/voices{parts[1]}"
+
+                    print(f"[音频生成] 路径转换: {generated_audio_path} -> {relative_path}")
+
                     return jsonify({
                         'status': 'success',
-                        'message': '音频克隆和生成完成',
+                        'message': '音频生成成功',
                         'cloned_audio_path': relative_path
                     })
                 else:
@@ -237,8 +245,32 @@ def audio_clone():
                         'status': 'error',
                         'message': '语音生成失败'
                     }), 500
+
             else:
-                # 只有克隆，没有生成
+                # ==================== 克隆模式：提取说话人特征 ====================
+                # 将相对路径转换为绝对路径
+                original_audio_path = data['original_audio_path']
+                if not os.path.isabs(original_audio_path):
+                    # 获取当前Flask应用的目录作为基准
+                    current_dir = os.path.dirname(os.path.abspath(__file__))
+                    original_audio_path = os.path.join(current_dir, original_audio_path)
+                    original_audio_path = os.path.normpath(original_audio_path)
+
+                print(f"[音频克隆] 开始处理克隆请求:")
+                print(f"[音频克隆] 原音频路径: {data['original_audio_path']} -> {original_audio_path}")
+                print(f"[音频克隆] 目标音频ID: {data['target_audio_id']}")
+
+                # 提取说话人特征
+                if not ov_service.extract_and_save_speaker_feature(
+                    speaker_id=data['target_audio_id'],
+                    reference_audio=original_audio_path
+                ):
+                    return jsonify({
+                        'status': 'error',
+                        'message': '说话人特征提取失败'
+                    }), 500
+
+                # 克隆模式：只进行特征提取，不生成音频
                 return jsonify({
                     'status': 'success',
                     'message': '说话人特征提取完成，可以用于后续音频生成'
@@ -261,25 +293,38 @@ def audio_clone():
 def get_cloned_audios():
     """获取已克隆的音频列表API - 为音频克隆页面提供数据"""
     try:
-        # TODO: 替换成实际逻辑
-        # 实际应用中，这里应该从数据库或文件系统获取真实的音频列表
-        # 目前为模拟数据用于前端演示
-        cloned_audios = [
-            {"id": "audio_001", "name": "audio_001", "created_at": "2025-01-17T10:30:00Z"},
-            {"id": "audio_002", "name": "audio_002", "created_at": "2025-01-17T11:15:00Z"},
-            {"id": "test_audio_01", "name": "test_audio_01", "created_at": "2025-01-17T09:45:00Z"},
-            {"id": "sample_voice", "name": "sample_voice", "created_at": "2025-01-17T08:20:00Z"}
-        ]
+        # 使用OpenVoiceService获取实际已保存的说话人特征
+        ov_service = OpenVoiceService()
+        available_speakers = ov_service.list_available_speakers()
 
+        # 获取说话人特征信息
+        speaker_features = ov_service.speaker_features
+        cloned_audios = []
+
+        for speaker_id in available_speakers:
+            if speaker_id in speaker_features:
+                feature_info = speaker_features[speaker_id]
+                cloned_audios.append({
+                    "id": speaker_id,
+                    "name": speaker_id,
+                    "created_at": feature_info.get('created_time', '未知时间'),
+                    "reference_audio": feature_info.get('reference_audio', '未知'),
+                    "status": "已提取特征"
+                })
+
+        print(f"[API] 获取到 {len(cloned_audios)} 个已克隆的音频")
         return jsonify({
             'status': 'success',
-            'audios': cloned_audios
+            'audios': cloned_audios,
+            'total_count': len(cloned_audios)
         })
 
     except Exception as e:
+        print(f"[API] 获取已克隆音频列表失败: {e}")
         return jsonify({
             'status': 'error',
-            'message': str(e)
+            'message': str(e),
+            'audios': []
         }), 500
 
 @app.route('/chat_system', methods=['GET', 'POST'])

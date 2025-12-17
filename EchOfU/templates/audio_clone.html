@@ -11,6 +11,7 @@
 
     <!-- JavaScript模块 -->
     <script src="{{ url_for('static', filename='js/modules/theme-manager.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/audio-manager.js') }}"></script>
 
     <style>
         /* 只保留页面特有的样式 */
@@ -117,11 +118,11 @@
                     </div>
                 </div>
 
-                <!-- 克隆音频播放器 -->
+                <!-- 生成音频播放器 -->
                 <div class="preview-container" id="clonedAudioPlayer">
                     <div class="preview-placeholder">
-                        <h3>克隆音频播放器</h3>
-                        <p>克隆完成后将在此显示</p>
+                        <h3>生成音频播放器</h3>
+                        <p>特征提取成功后，可生成新音频在此显示</p>
                     </div>
                 </div>
 
@@ -375,23 +376,22 @@
                 progressPercent.textContent = '100%';
 
                 if (result.status === 'success') {
-                    progressStatus.textContent = '克隆完成';
-                    cloneStatus.textContent = '克隆完成';
+                    progressStatus.textContent = '特征提取完成';
+                    cloneStatus.textContent = '特征提取完成';
                     cloneStatus.style.color = 'var(--neon-green)';
 
-                    // 显示克隆音频 - 使用后端返回的路径
+                    // 显示特征提取成功信息（不显示音频播放器，因为这只是特征提取）
                     const clonedContainer = document.getElementById('clonedAudioPlayer');
-                    const audioPath = result.cloned_audio_path || `static/voices/cloned_${targetAudioId}.wav`;
 
                     clonedContainer.innerHTML = `
-                        <audio controls class="audio-element" autoplay>
-                            <source src="/${audioPath}" type="audio/wav">
-                            <source src="/${audioPath.replace('.wav', '.mp3')}" type="audio/mpeg">
-                            您的浏览器不支持音频播放
-                        </audio>
-                        <div style="text-align: center; margin-top: var(--space-2); color: var(--neon-green);">
-                            <small>✅ 克隆完成 - 目标音频: ${targetAudioId}</small>
-                            <br><small>📁 文件路径: ${audioPath}</small>
+                        <div style="text-align: center; padding: var(--space-4); background: var(--surface-secondary); border-radius: var(--radius-lg); border: 1px solid var(--neon-green);">
+                            <div style="font-size: 2rem; color: var(--neon-green); margin-bottom: var(--space-2);">✅</div>
+                            <div style="color: var(--text-primary); font-weight: 600; margin-bottom: var(--space-2);">特征提取成功!</div>
+                            <div style="color: var(--text-secondary); font-size: 0.875rem;">
+                                <div>🎭 说话人ID: <strong>${targetAudioId}</strong></div>
+                                <div>📅 提取时间: <strong>${new Date().toLocaleString()}</strong></div>
+                                <div>💡 现在可以使用此说话人特征生成新的音频</div>
+                            </div>
                         </div>
                     `;
 
