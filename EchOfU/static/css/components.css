@@ -85,9 +85,28 @@
 .neon-input::placeholder { color: var(--text-secondary); }
 
 /* 进度条 */
-.neon-progress { width:100%; height:8px; background: var(--surface-secondary); border-radius: var(--radius-full); overflow:hidden; }
-.neon-progress-bar { height:100%; background: linear-gradient(90deg,var(--neon-blue),var(--neon-purple)); border-radius: var(--radius-full); transition: width .3s ease; }
-.neon-progress-bar::after { content:''; position:absolute; inset:0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: shimmer 2s infinite; }
+.neon-progress {
+    width: 100%;
+    height: 8px;
+    background: var(--surface-secondary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.neon-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+    border-radius: var(--radius-full);
+    transition: width 0.3s ease;
+}
+
+.neon-progress-bar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 2s infinite;
+}
 @keyframes shimmer { 0%{ transform: translateX(-100%);} 100%{ transform: translateX(100%);} }
 
 /* 数据指示器 */

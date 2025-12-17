@@ -10,145 +10,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
 
     <style>
-        .audio-clone-container {
-            min-height: 100vh;
-            padding: var(--space-4);
-        }
-
-        .header-section {
-            margin-bottom: var(--space-6);
-            text-align: center;
-        }
-
-        .page-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: var(--space-2);
-        }
-
-        .page-subtitle {
-            color: var(--text-secondary);
-            font-size: 1.125rem;
-        }
-
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: var(--space-4);
-            margin-bottom: var(--space-6);
-        }
-
-        @media (max-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .audio-preview-wrapper {
-            position: relative;
-            overflow: hidden;
-            border-radius: var(--radius-xl);
-        }
-
-        .audio-player-container {
-            width: 100%;
-            background: linear-gradient(45deg, var(--bg-nebula), var(--bg-starlight));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: var(--border-neon);
-            position: relative;
-            border-radius: var(--radius-xl);
-            margin-bottom: var(--space-4);
-            padding: var(--space-6);
-        }
-
-        .audio-player-container::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(45deg,
-                transparent 30%,
-                rgba(0, 243, 255, 0.1) 50%,
-                transparent 70%);
-            animation: scanline 3s linear infinite;
-        }
-
-        @keyframes scanline {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
-        }
-
-        .preview-placeholder {
-            text-align: center;
-            padding: var(--space-4);
-            position: relative;
-            z-index: 1;
-        }
-
-        .preview-icon {
-            font-size: 4rem;
-            margin-bottom: var(--space-3);
-            opacity: 0.5;
-        }
-
-        .control-panel {
-            background: var(--surface-primary);
-            border: var(--border-neon);
-            border-radius: var(--radius-xl);
-            padding: var(--space-4);
-        }
-
-        .control-group {
-            margin-bottom: var(--space-4);
-        }
-
-        .control-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: var(--space-3);
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-
-        .control-grid {
-            display: grid;
-            gap: var(--space-3);
-        }
-
-        .text-input-area {
-            background: var(--surface-secondary);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            border-radius: var(--radius-md);
-            padding: var(--space-3);
-            min-height: 120px;
-            resize: vertical;
-            width: 100%;
-            color: var(--text-primary);
-        }
-
-        .text-input-area:focus {
-            outline: none;
-            border-color: var(--neon-blue);
-            box-shadow: 0 0 0 2px rgba(0, 243, 255, 0.1);
-        }
-
-        .action-section {
-            margin-top: var(--space-4);
-        }
-
-        .action-btn {
-            width: 100%;
-            padding: var(--space-3);
-            font-size: 1.125rem;
-        }
-
+        /* 只保留页面特有的样式 */
         .progress-section {
             margin-top: var(--space-4);
             display: none;
@@ -163,15 +25,6 @@
 
         .progress-status {
             color: var(--neon-blue);
-        }
-
-        .section-divider {
-            height: 1px;
-            background: linear-gradient(90deg,
-                transparent,
-                rgba(0, 243, 255, 0.3),
-                transparent);
-            margin: var(--space-4) 0;
         }
 
         .status-indicators {
@@ -196,6 +49,23 @@
             position: relative;
             z-index: 1;
         }
+
+        .text-input-area {
+            background: var(--surface-secondary);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: var(--radius-md);
+            padding: var(--space-3);
+            min-height: 120px;
+            resize: vertical;
+            width: 100%;
+            color: var(--text-primary);
+        }
+
+        .text-input-area:focus {
+            outline: none;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 0 2px rgba(0, 243, 255, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -212,7 +82,7 @@
         </ul>
     </nav>
 
-    <div class="audio-clone-container">
+    <div class="page-container">
         <div class="header-section">
             <h1 class="page-title">🎵 音频克隆</h1>
             <p class="page-subtitle">基于参考音频进行高质量语音克隆系统</p>
@@ -220,9 +90,9 @@
 
         <div class="main-grid">
             <!-- 音频播放区域 -->
-            <div class="audio-preview-wrapper">
+            <div class="preview-wrapper">
                 <!-- 原音频播放器 -->
-                <div class="audio-player-container" id="originalAudioPlayer">
+                <div class="preview-container" id="originalAudioPlayer">
                     <div class="preview-placeholder">
                         <div class="preview-icon">🎧</div>
                         <h3>原音频播放器</h3>
@@ -231,7 +101,7 @@
                 </div>
 
                 <!-- 克隆音频播放器 -->
-                <div class="audio-player-container" id="clonedAudioPlayer">
+                <div class="preview-container" id="clonedAudioPlayer">
                     <div class="preview-placeholder">
                         <div class="preview-icon">🤖</div>
                         <h3>克隆音频播放器</h3>

@@ -10,112 +10,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
     
     <style>
-        .video-gen-container {
-            min-height: 100vh;
-            padding: var(--space-4);
-        }
-        
-        .header-section {
-            margin-bottom: var(--space-6);
-            text-align: center;
-        }
-        
-        .page-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: var(--space-2);
-        }
-        
-        .page-subtitle {
-            color: var(--text-secondary);
-            font-size: 1.125rem;
-        }
-        
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: var(--space-4);
-            margin-bottom: var(--space-6);
-        }
-        
-        @media (max-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .video-preview-wrapper {
-            position: relative;
-            overflow: hidden;
-            border-radius: var(--radius-xl);
-        }
-        
+        /* 只保留页面特有的样式 */
         .video-preview {
             width: 100%;
             aspect-ratio: 16/9;
-            background: linear-gradient(45deg, var(--bg-nebula), var(--bg-starlight));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: var(--border-neon);
-            position: relative;
-        }
-        
-        .video-preview::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(45deg, 
-                transparent 30%, 
-                rgba(0, 243, 255, 0.1) 50%, 
-                transparent 70%);
-            animation: scanline 3s linear infinite;
-        }
-        
-        @keyframes scanline {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
-        }
-        
-        .preview-placeholder {
-            text-align: center;
-            padding: var(--space-4);
-        }
-        
-        .preview-icon {
-            font-size: 4rem;
-            margin-bottom: var(--space-3);
-            opacity: 0.5;
-        }
-        
-        .control-panel {
-            background: var(--surface-primary);
-            border: var(--border-neon);
-            border-radius: var(--radius-xl);
-            padding: var(--space-4);
-        }
-        
-        .control-group {
-            margin-bottom: var(--space-4);
-        }
-        
-        .control-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: var(--space-3);
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-        
-        .control-grid {
-            display: grid;
-            gap: var(--space-3);
         }
         
         .gpu-selector {
@@ -223,16 +121,16 @@
         </ul>
     </nav>
 
-    <div class="video-gen-container">
+    <div class="page-container">
         <div class="header-section">
             <h1 class="page-title">🎬 智能视频生成</h1>
             <p class="page-subtitle">基于音频驱动的实时视频合成系统</p>
         </div>
-        
+
         <div class="main-grid">
             <!-- 视频预览区域 -->
-            <div class="video-preview-wrapper">
-                <div class="video-preview" id="videoPreview">
+            <div class="preview-wrapper">
+                <div class="preview-container video-preview" id="videoPreview">
                     <div class="preview-placeholder">
                         <div class="preview-icon">📽️</div>
                         <h3>视频预览区</h3>
