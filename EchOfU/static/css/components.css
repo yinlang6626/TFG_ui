@@ -280,3 +280,172 @@ input[type="range"].neon-input:hover::-moz-range-thumb {
 .neon-slider:before { position:absolute; content:""; height:18px; width:18px; left:4px; bottom:3px; background-color: var(--neon-blue); border-radius:50%; transition:.3s; box-shadow:0 6px 18px rgba(43,140,255,0.06); }
 input:checked + .neon-slider { background-color: rgba(43,140,255,0.08); }
 input:checked + .neon-slider:before { transform: translateX(24px); background-color: var(--neon-purple); box-shadow:0 10px 26px rgba(124,92,255,0.08); }
+
+/* 主题切换器 */
+.theme-toggle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-secondary);
+    border: 1px solid var(--border-neon);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    z-index: 1000;
+}
+
+.theme-toggle:hover {
+    background: var(--surface-glow);
+    transform: translateY(-1px);
+}
+
+.theme-toggle::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+    border-radius: var(--radius-full);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+}
+
+.theme-toggle:hover::before {
+    opacity: 0.3;
+}
+
+.theme-icon {
+    width: 20px;
+    height: 20px;
+    transition: all var(--transition-normal);
+    position: relative;
+}
+
+.theme-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+}
+
+/* 浅色模式图标 - 太阳 */
+.theme-icon.sun {
+    color: #fbbf24;
+}
+
+/* 深色模式图标 - 月亮 */
+.theme-icon.moon {
+    color: #60a5fa;
+}
+
+/* 主题切换动画 */
+.theme-toggle.active .theme-icon.sun {
+    transform: rotate(180deg) scale(0);
+    opacity: 0;
+}
+
+.theme-toggle.active .theme-icon.moon {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+}
+
+.theme-toggle:not(.active) .theme-icon.sun {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+}
+
+.theme-toggle:not(.active) .theme-icon.moon {
+    transform: rotate(-180deg) scale(0);
+    opacity: 0;
+}
+
+/* 移动端响应式 */
+@media (max-width: 768px) {
+    .theme-toggle {
+        padding: var(--space-1) var(--space-2);
+        gap: var(--space-1);
+    }
+
+    .theme-icon {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* 主题指示器 */
+.theme-indicator {
+    position: fixed;
+    top: var(--space-4);
+    right: var(--space-4);
+    z-index: 1000;
+}
+
+/* 导航栏中的主题切换器 */
+.navbar-theme-toggle {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+    padding: var(--space-2) var(--space-3);
+}
+
+.navbar-theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* 深色模式下的导航栏主题切换器 */
+[data-theme="dark"] .navbar-theme-toggle {
+    border-color: rgba(77, 166, 255, 0.2);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .navbar-theme-toggle:hover {
+    background: rgba(77, 166, 255, 0.1);
+    border-color: rgba(77, 166, 255, 0.3);
+}
+
+/* 主题切换提示框 */
+.theme-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-primary);
+    border: 1px solid var(--border-neon);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-normal);
+    z-index: 1001;
+    margin-bottom: var(--space-2);
+}
+
+.theme-toggle:hover .theme-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.theme-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--surface-primary);
+}
+
+/* 主题切换动画效果 */
+@keyframes theme-transition {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.theme-transitioning {
+    animation: theme-transition 0.3s ease-in-out;
+}

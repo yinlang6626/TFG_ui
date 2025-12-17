@@ -1,40 +1,200 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh" class="futuristic-theme">
 <head>
     <meta charset="UTF-8">
-    <title>DATA HAMMER GROUP TALKING SYSTEM</title>
-    
-    <!-- 主题 CSS（清新明亮） -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYNCTALK AI - 智能语音对话系统</title>
+
+    <!-- 主题 CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/system.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
-    
+
+    <!-- JavaScript模块 -->
+    <script src="{{ url_for('static', filename='js/modules/theme-manager.js') }}"></script>
+
     <style>
-        /* 添加一个测试类 */
-        .test-neon {
-            color: var(--neon-blue);
+        /* 页面特定样式 */
+        .hero-section {
+            text-align: center;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin: 0 0 var(--space-3);
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin: 0 0 var(--space-8);
+            line-height: 1.6;
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: var(--space-4);
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .nav-card {
+            background: var(--surface-primary);
             border: var(--border-neon);
-            padding: var(--space-4);
-            background: var(--glass-bg);
             border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+            opacity: 0;
+            transition: opacity var(--transition-normal);
+            z-index: 0;
+        }
+
+        .nav-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--glow-strong);
+        }
+
+        .nav-card:hover::before {
+            opacity: 0.05;
+        }
+
+        .nav-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .nav-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto var(--space-4);
+            background: var(--surface-secondary);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--neon-blue);
+        }
+
+        .nav-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 var(--space-2);
+            color: var(--text-primary);
+        }
+
+        .nav-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .theme-toggle-container {
+            position: fixed;
+            top: var(--space-4);
+            right: var(--space-4);
+            z-index: 1000;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
         }
     </style>
 </head>
 <body class="futuristic-theme">
-    <div class="main-container" style="min-height: calc(100vh - 80px); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 16px;">
-        <header style="max-width: 980px; margin: 0 auto 18px; text-align:center;">
-            <h1 style="font-size:3rem; margin:0 0 12px; font-weight:800; color:var(--text-primary)">DATA HAMMER GROUP<br>TALKING SYSTEM</h1>
-            <p style="color:var(--text-secondary); margin:0 0 18px; font-size:1.125rem;">轻量、可扩展的语音克隆与视频生成对话</p>
+    <!-- 主题切换器 -->
+    <div class="theme-toggle-container">
+        <button class="theme-toggle navbar-theme-toggle" data-theme-toggle aria-label="切换主题">
+            <span class="theme-icon sun">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </span>
+            <span class="theme-icon moon">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2"/>
+                </svg>
+            </span>
+            <span class="theme-tooltip">切换主题</span>
+        </button>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="main-container" style="min-height: 100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:var(--space-8);">
+        <!-- 标题区域 -->
+        <header class="hero-section">
+            <h1 class="hero-title">SYNCTALK AI</h1>
+            <p class="hero-subtitle">智能语音克隆与视频生成对话系统</p>
         </header>
 
-        <main style="max-width: 980px; margin: 0 auto; display:flex; flex-direction:column; align-items:center; gap:18px;">
-            <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
-                <button class="neon-btn" onclick="window.location.href='/audio_clone'">音频克隆</button>
-                <button class="neon-btn" onclick="window.location.href='/model_training'">训练模型</button>
-                <button class="neon-btn" onclick="window.location.href='/video_generation'">视频生成</button>
-                <button class="neon-btn" onclick="window.location.href='/chat_system'">人机对话</button>
+        <!-- 导航卡片 -->
+        <main>
+            <div class="nav-grid">
+                <a href="/model_training" class="nav-card">
+                    <div class="nav-content">
+                        <h2 class="nav-title">训练模型</h2>
+                        <p class="nav-description">基于深度学习的个性化模型训练</p>
+                    </div>
+                </a>
+
+                <a href="/video_generation" class="nav-card">
+                    <div class="nav-content">
+                        <h2 class="nav-title">视频生成</h2>
+                        <p class="nav-description">音频驱动的实时视频合成</p>
+                    </div>
+                </a>
+
+                <a href="/audio_clone" class="nav-card">
+                    <div class="nav-content">
+                        <h2 class="nav-title">音频克隆</h2>
+                        <p class="nav-description">高质量语音克隆系统</p>
+                    </div>
+                </a>
+
+                <a href="/chat_system" class="nav-card">
+                    <div class="nav-content">
+                        <h2 class="nav-title">人机对话</h2>
+                        <p class="nav-description">实时语音交互与智能响应</p>
+                    </div>
+                </a>
             </div>
         </main>
     </div>
+
+    <!-- 初始化脚本 -->
+    <script>
+        // 主题切换器初始化已由theme-manager.js自动完成
+        document.addEventListener('DOMContentLoaded', function() {
+            // 可以在这里添加页面特定的初始化逻辑
+            console.log('SYNCTALK AI 系统已就绪');
+        });
+    </script>
 </body>
 </html>

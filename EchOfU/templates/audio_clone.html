@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
 
+    <!-- JavaScript模块 -->
+    <script src="{{ url_for('static', filename='js/modules/theme-manager.js') }}"></script>
+
     <style>
         /* 只保留页面特有的样式 */
         .progress-section {
@@ -80,6 +83,21 @@
             <li><a href="/audio_clone" class="nav-link active">音频克隆</a></li>
             <li><a href="/chat_system" class="nav-link">人机对话</a></li>
         </ul>
+        <!-- 主题切换器 -->
+        <button class="theme-toggle navbar-theme-toggle" data-theme-toggle aria-label="切换主题">
+            <span class="theme-icon sun">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </span>
+            <span class="theme-icon moon">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2"/>
+                </svg>
+            </span>
+            <span class="theme-tooltip">切换主题</span>
+        </button>
     </nav>
 
     <div class="page-container">

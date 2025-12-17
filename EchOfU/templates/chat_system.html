@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
 
     <!-- JavaScript模块 -->
+    <script src="{{ url_for('static', filename='js/modules/theme-manager.js') }}"></script>
     <script src="{{ url_for('static', filename='js/modules/audio-manager.js') }}"></script>
     
     <style>
@@ -26,7 +27,7 @@
         .chat-title {
             font-size: 2.5rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #00c6ff, #7e57c2);
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -99,7 +100,7 @@
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #ff6bcb, #7e57c2);
+            background: linear-gradient(135deg, #ff6bcb, var(--neon-purple));
             border: none;
             color: white;
             font-size: 14px;
@@ -115,12 +116,12 @@
         
         .record-btn.recording {
             animation: pulse-glow 1s infinite alternate;
-            background: linear-gradient(135deg, #00d4aa, #00c6ff);
+            background: linear-gradient(135deg, var(--neon-green), var(--neon-blue));
         }
         
         @keyframes pulse-glow {
-            0% { box-shadow: 0 0 20px #00d4aa; }
-            100% { box-shadow: 0 0 40px #00c6ff; }
+            0% { box-shadow: 0 0 20px var(--neon-green); }
+            100% { box-shadow: 0 0 40px var(--neon-blue); }
         }
         
         .record-btn::before {
@@ -128,7 +129,7 @@
             position: absolute;
             inset: -4px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #ff6bcb, #7e57c2, #00c6ff);
+            background: linear-gradient(135deg, #ff6bcb, var(--neon-purple), var(--neon-blue));
             z-index: -1;
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -199,13 +200,13 @@
         .message.user {
             align-self: flex-end;
             background: rgba(0, 243, 255, 0.1);
-            border-left: 3px solid #00c6ff;
+            border-left: 3px solid var(--neon-blue);
         }
         
         .message.ai {
             align-self: flex-start;
             background: rgba(185, 103, 255, 0.1);
-            border-left: 3px solid #7e57c2;
+            border-left: 3px solid var(--neon-purple);
         }
         
         .message-time {
@@ -251,7 +252,7 @@
         }
         
         .config-item:hover {
-            border-color: #00c6ff;
+            border-color: var(--neon-blue);
         }
         
         .config-label {
@@ -309,13 +310,13 @@
         
         .indicator-value {
             font-weight: 600;
-            color: #00c6ff;
+            color: var(--neon-blue);
         }
         
         .neon-btn {
             background: rgba(0, 198, 255, 0.1);
             border: 1px solid rgba(0, 198, 255, 0.3);
-            color: #00c6ff;
+            color: var(--neon-blue);
             padding: 8px 16px;
             border-radius: 8px;
             cursor: pointer;
@@ -365,7 +366,7 @@
         }
         
         input:checked + .neon-slider {
-            background-color: #00c6ff;
+            background-color: var(--neon-blue);
         }
         
         input:checked + .neon-slider:before {
@@ -375,7 +376,7 @@
         .neon-input {
             background: rgba(0, 198, 255, 0.1);
             border: 1px solid rgba(0, 198, 255, 0.3);
-            color: #00c6ff;
+            color: var(--neon-blue);
             padding: 8px 12px;
             border-radius: 8px;
             width: 100%;
@@ -390,7 +391,7 @@
         
         .neon-progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #00c6ff, #7e57c2);
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
             border-radius: 3px;
         }
         
@@ -412,6 +413,21 @@
             <li><a href="/audio_clone" class="nav-link">音频克隆</a></li>
             <li><a href="/chat_system" class="nav-link active">人机对话</a></li>
         </ul>
+        <!-- 主题切换器 -->
+        <button class="theme-toggle navbar-theme-toggle" data-theme-toggle aria-label="切换主题">
+            <span class="theme-icon sun">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </span>
+            <span class="theme-icon moon">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2"/>
+                </svg>
+            </span>
+            <span class="theme-tooltip">切换主题</span>
+        </button>
     </nav>
 
     <div class="chat-container">
@@ -623,7 +639,8 @@
             
             if (animate && isRecording) {
                 // 动态波形
-                ctx.strokeStyle = '#00c6ff';
+                const neonBlue = getComputedStyle(document.documentElement).getPropertyValue('--neon-blue').trim();
+                ctx.strokeStyle = neonBlue;
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 
@@ -637,7 +654,8 @@
                 requestAnimationFrame(() => drawWaveform(true));
             } else {
                 // 静态波形
-                ctx.strokeStyle = 'rgba(0, 198, 255, 0.3)';
+                const neonBlue = getComputedStyle(document.documentElement).getPropertyValue('--neon-blue').trim();
+            ctx.strokeStyle = neonBlue + '4D'; // 添加30%透明度
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 
@@ -681,7 +699,7 @@
                 recordIcon.textContent = '停止';
                 recordText.textContent = '停止录音';
                 recordStatus.textContent = '录音中...';
-                recordStatus.style.color = '#00d4aa';
+                recordStatus.style.color = 'var(--neon-green)';
                 
                 // 开始计时
                 recordingTime = 0;
@@ -708,7 +726,7 @@
                 recordIcon.textContent = '麦克风';
                 recordText.textContent = '开始录音';
                 recordStatus.textContent = '处理中...';
-                recordStatus.style.color = '#00c6ff';
+                recordStatus.style.color = 'var(--neon-blue)';
                 
                 // 停止动态波形
                 drawWaveform(false);
@@ -767,7 +785,7 @@
                 
                 if (result.status === 'success') {
                     recordStatus.textContent = '视频生成成功';
-                    recordStatus.style.color = '#00d4aa';
+                    recordStatus.style.color = 'var(--neon-green)';
                     
                     // 更新视频播放器
                     if (result.video_path) {

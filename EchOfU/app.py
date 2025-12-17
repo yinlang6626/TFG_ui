@@ -90,7 +90,7 @@ def video_generation():
         gpu_list = ['GPU0']
     
     # 获取可用模型
-    models = ['SyncTalk', 'Wav2Lip', 'SadTalker']
+    models = ['SyncTalk', 'ER-NeRF']
     synctalk_dir = './SyncTalk/model'
     if os.path.exists(synctalk_dir):
         for item in os.listdir(synctalk_dir):
