@@ -1,1 +1,6 @@
+# requirements.txt
 Flask==3.0.3
+psutil==5.9.8
+gputil==1.4.0  # 添加 GPUtil
+SpeechRecognition==3.10.1
+zhipuai==2.0.1

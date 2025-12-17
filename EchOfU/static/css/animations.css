@@ -1,0 +1,159 @@
+/* static/css/futuristic-animations.css */
+/* 加载动画 */
+.page-loading {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-deep-space);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-container {
+    width: 200px;
+    text-align: center;
+}
+
+.loading-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--surface-secondary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin: var(--space-3) 0;
+}
+
+.loading-progress {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+    transition: width 0.3s ease;
+}
+
+.loading-text {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+/* 通知系统 */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--surface-primary);
+    border: var(--border-neon);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+    z-index: 10000;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification-icon {
+    font-size: 1.25rem;
+}
+
+.notification-message {
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.notification-success {
+    border-color: var(--neon-green);
+}
+
+.notification-error {
+    border-color: var(--neon-pink);
+}
+
+.notification-warning {
+    border-color: var(--neon-pink);
+}
+
+/* 鼠标轨迹 */
+.mouse-trail {
+    position: fixed;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--neon-blue), transparent 70%);
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: screen;
+}
+
+/* 按钮波纹效果 */
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.7);
+    transform: scale(0);
+    animation: ripple 0.6s linear;
+}
+
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* 粒子动画 */
+.particle {
+    position: absolute;
+    background: var(--neon-blue);
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.5;
+    animation: particle-float 20s linear infinite;
+}
+
+@keyframes particle-float {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-1000px) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+/* 输入框聚焦效果 */
+.form-field.focused {
+    position: relative;
+}
+
+.form-field.focused::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+    animation: focus-line 0.3s ease;
+}
+
+@keyframes focus-line {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}

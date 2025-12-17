@@ -1,0 +1,38 @@
+[
+  {
+    "timestamp": "2025-12-17T16:46:43.423349",
+    "model": "SyncTalk",
+    "params": {
+      "model_name": "SyncTalk",
+      "model_param": "",
+      "ref_audio": "",
+      "gpu_choice": "GPU0",
+      "target_text": ""
+    },
+    "output": "static\\videos\\out.mp4"
+  },
+  {
+    "timestamp": "2025-12-17T16:46:47.936020",
+    "model": "SyncTalk",
+    "params": {
+      "model_name": "SyncTalk",
+      "model_param": "",
+      "ref_audio": "",
+      "gpu_choice": "GPU0",
+      "target_text": ""
+    },
+    "output": "static\\videos\\out.mp4"
+  },
+  {
+    "timestamp": "2025-12-17T20:42:52.967559",
+    "model": "SyncTalk",
+    "params": {
+      "model_name": "SyncTalk",
+      "model_param": "",
+      "ref_audio": "",
+      "gpu_choice": "GPU0",
+      "target_text": ""
+    },
+    "output": "static\\videos\\out.mp4"
+  }
+]

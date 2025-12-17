@@ -1,0 +1,80 @@
+/* static/css/system.css - 清新明亮主题 */
+:root {
+    /* 轻快色系 */
+    --neon-blue: #2b8cff; /* 保留变量名供模板兼容 */
+    --neon-purple: #7c5cff;
+    --neon-pink: #ff7ab6;
+    --neon-green: #34c759;
+
+    /* 亮色背景 */
+    --bg-page: #f7fbff;
+    --bg-surface: #ffffff;
+    --bg-muted: #f3f6fb;
+
+    /* 界面元素 */
+    --surface-primary: #ffffff;
+    --surface-secondary: #f6f9fc;
+    --surface-glow: rgba(43,140,255,0.06);
+    --glass-bg: rgba(255,255,255,0.7);
+
+    /* 文字系统 */
+    --text-primary: #0f1724;
+    --text-secondary: #556073;
+    --text-accent: var(--neon-blue);
+
+    /* 边框与阴影 */
+    --border-neon: 1px solid rgba(15,23,36,0.06);
+    --glow-soft: 0 6px 18px rgba(15,23,36,0.06);
+    --glow-strong: 0 10px 30px rgba(15,23,36,0.08);
+
+    /* 动画时间 */
+    --transition-fast: 0.12s ease;
+    --transition-normal: 0.22s ease;
+    --transition-slow: 0.45s ease;
+
+    /* 空间系统 */
+    --space-unit: 8px;
+    --space-1: var(--space-unit);
+    --space-2: calc(var(--space-unit) * 2);
+    --space-3: calc(var(--space-unit) * 3);
+    --space-4: calc(var(--space-unit) * 4);
+    --space-6: calc(var(--space-unit) * 6);
+    --space-8: calc(var(--space-unit) * 8);
+
+    /* 圆角系统 */
+    --radius-none: 0;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 18px;
+    --radius-full: 9999px;
+}
+
+/* 基础重置 */
+.futuristic-theme {
+    background: linear-gradient(180deg, var(--bg-page) 0%, var(--bg-muted) 100%);
+    color: var(--text-primary);
+    font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 轻微的顶部装饰 */
+.futuristic-theme::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 220px;
+    background: linear-gradient(180deg, rgba(43,140,255,0.06), transparent 60%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* 全局容器宽度 */
+.main-container { max-width: 1280px; margin: 0 auto; padding: var(--space-4); }
+
+/* 轻量辅助按钮 */
+.btn-primary { background: var(--neon-blue); color: white; border-radius: var(--radius-md); padding: 8px 14px; border: none; }

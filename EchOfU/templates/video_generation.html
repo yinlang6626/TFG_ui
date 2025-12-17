@@ -1,90 +1,462 @@
 <!DOCTYPE html>
-<html lang="zh">
-
+<html lang="zh" class="futuristic-theme">
 <head>
     <meta charset="UTF-8">
-    <title>视频生成界面</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频生成 | SYNCTALK AI</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/system.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    
+    <style>
+        .video-gen-container {
+            min-height: 100vh;
+            padding: var(--space-4);
+        }
+        
+        .header-section {
+            margin-bottom: var(--space-6);
+            text-align: center;
+        }
+        
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: var(--space-2);
+        }
+        
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+        
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .video-preview-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--radius-xl);
+        }
+        
+        .video-preview {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: linear-gradient(45deg, var(--bg-nebula), var(--bg-starlight));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: var(--border-neon);
+            position: relative;
+        }
+        
+        .video-preview::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, 
+                transparent 30%, 
+                rgba(0, 243, 255, 0.1) 50%, 
+                transparent 70%);
+            animation: scanline 3s linear infinite;
+        }
+        
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        
+        .preview-placeholder {
+            text-align: center;
+            padding: var(--space-4);
+        }
+        
+        .preview-icon {
+            font-size: 4rem;
+            margin-bottom: var(--space-3);
+            opacity: 0.5;
+        }
+        
+        .control-panel {
+            background: var(--surface-primary);
+            border: var(--border-neon);
+            border-radius: var(--radius-xl);
+            padding: var(--space-4);
+        }
+        
+        .control-group {
+            margin-bottom: var(--space-4);
+        }
+        
+        .control-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: var(--space-3);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .control-grid {
+            display: grid;
+            gap: var(--space-3);
+        }
+        
+        .gpu-selector {
+            display: flex;
+            gap: var(--space-2);
+            flex-wrap: wrap;
+        }
+        
+        .gpu-option {
+            flex: 1;
+            min-width: 80px;
+        }
+        
+        .gpu-label {
+            display: block;
+            padding: var(--space-2) var(--space-3);
+            background: var(--surface-secondary);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: var(--radius-md);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+        
+        .gpu-label:hover {
+            border-color: var(--neon-blue);
+            background: rgba(0, 243, 255, 0.1);
+        }
+        
+        .gpu-option input:checked + .gpu-label {
+            background: rgba(0, 243, 255, 0.2);
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+        }
+        
+        .text-input-area {
+            background: var(--surface-secondary);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: var(--radius-md);
+            padding: var(--space-3);
+            min-height: 120px;
+            resize: vertical;
+            width: 100%;
+            color: var(--text-primary);
+        }
+        
+        .text-input-area:focus {
+            outline: none;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 0 2px rgba(0, 243, 255, 0.1);
+        }
+        
+        .generate-section {
+            margin-top: var(--space-6);
+        }
+        
+        .generate-btn {
+            width: 100%;
+            padding: var(--space-3);
+            font-size: 1.125rem;
+        }
+        
+        .progress-section {
+            margin-top: var(--space-4);
+            display: none;
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--space-2);
+            font-size: 0.875rem;
+        }
+        
+        .progress-status {
+            color: var(--neon-blue);
+        }
+        
+        .status-indicators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-3);
+            margin-top: var(--space-4);
+        }
+        
+        .status-card {
+            background: var(--surface-secondary);
+            border-radius: var(--radius-md);
+            padding: var(--space-3);
+            border-left: 3px solid var(--neon-blue);
+        }
+    </style>
 </head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="neon-navbar">
+        <a href="/" class="nav-brand">
+            <span>SYNCTALK</span>
+        </a>
+        <ul class="nav-menu">
+            <li><a href="/model_training" class="nav-link">训练模型</a></li>
+            <li><a href="/video_generation" class="nav-link active">视频生成</a></li>
+            <li><a href="/chat_system" class="nav-link">人机对话</a></li>
+        </ul>
+    </nav>
 
-<body class="subpage-bg">
-    <h2>视频生成界面</h2>
-    <div class="video-page-container">
-        <!-- 左边视频显示 -->
-        <div class="video-display">
-            <video id="outputVideo" controls width="420">
-                <source src="{{ url_for('static', filename='videos/sample.mp4') }}" type="video/mp4">
-            </video>
+    <div class="video-gen-container">
+        <div class="header-section">
+            <h1 class="page-title">🎬 智能视频生成</h1>
+            <p class="page-subtitle">基于音频驱动的实时视频合成系统</p>
         </div>
-
-        <!-- 右边输入表单 -->
-        <div class="form-section">
-            <form id="videoForm">
-                <div class="form-group">
-                    <label>模型名称</label>
-                    <select name="model_name">
-                        <option value="model1">Model 1</option>
-                        <option value="model2">Model 2</option>
-                        <option value="SyncTalk">SyncTalk</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>模型目录地址</label>
-                    <input type="text" name="model_param" placeholder="请输入模型目录路径">
-                </div>
-
-                <div class="form-group">
-                    <label>参考音频地址</label>
-                    <input type="text" name="ref_audio" placeholder="请输入音频路径">
+        
+        <div class="main-grid">
+            <!-- 视频预览区域 -->
+            <div class="video-preview-wrapper">
+                <div class="video-preview" id="videoPreview">
+                    <div class="preview-placeholder">
+                        <div class="preview-icon">📽️</div>
+                        <h3>视频预览区</h3>
+                        <p>生成的视频将在此处显示</p>
+                    </div>
                 </div>
                 
-                <div class="form-group">
-                    <label>GPU选择</label>
-                    <select name="gpu_choice">
-                        <option value="GPU0">GPU 0</option>
-                        <option value="GPU1">GPU 1</option>
-                    </select>
+                <!-- 视频控制 -->
+                <div class="status-indicators">
+                    <div class="status-card">
+                        <div class="indicator-label">渲染状态</div>
+                        <div class="indicator-value" id="renderStatus">准备就绪</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="indicator-label">预估时间</div>
+                        <div class="indicator-value" id="estimatedTime">10-30 秒</div>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label>目标文字（文本框）</label>
-                    <textarea name="target_text" placeholder="留空则直接使用参考音频"></textarea>
-                </div>
-
-                <button type="submit" class="generate-btn">生成视频</button>
-            </form>
+            </div>
+            
+            <!-- 控制面板 -->
+            <div class="control-panel floating-card">
+                <form id="videoGenForm">
+                    <div class="control-group">
+                        <div class="control-title">
+                            <span>⚙️ 模型配置</span>
+                        </div>
+                        <div class="control-grid">
+                            <div>
+                                <label class="indicator-label">模型名称</label>
+                                <select class="neon-input" name="model_name">
+                                    <option value="SyncTalk">SyncTalk</option>
+                                    <option value="Wav2Lip">Wav2Lip Pro</option>
+                                    <option value="Custom">自定义模型</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="indicator-label">模型目录</label>
+                                <div style="display: flex; gap: var(--space-2);">
+                                    <input type="text" class="neon-input" 
+                                           placeholder="/SyncTalk/modelwide" 
+                                           name="model_param">
+                                    <button type="button" class="neon-btn" style="white-space: nowrap;">
+                                        浏览
+                                    </button>
+                                </div>
+                            </div>
+                            
+                                <div>
+                                    <label class="indicator-label">参考音频</label>
+                                    <div style="display: flex; gap: var(--space-2); align-items:center;">
+                                        <input type="text" class="neon-input" 
+                                               placeholder="请选择音频文件" 
+                                               name="ref_audio" id="refAudioPath" readonly>
+                                        <button type="button" class="neon-btn" id="uploadAudioBtn" style="white-space: nowrap;">上传</button>
+                                        <input type="file" id="refAudioInput" accept="audio/*" style="display:none">
+                                    </div>
+                                    <small style="color: var(--text-secondary); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
+                                        上传后文件会发送到服务器并替换参考音频
+                                    </small>
+                                </div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-title">
+                            <span>🎛️ 硬件配置</span>
+                        </div>
+                        <div class="gpu-selector">
+                            <label class="gpu-option">
+                                <input type="radio" name="gpu_choice" value="GPU0" checked hidden>
+                                <span class="gpu-label">GPU 0</span>
+                            </label>
+                            <label class="gpu-option">
+                                <input type="radio" name="gpu_choice" value="GPU1" hidden>
+                                <span class="gpu-label">GPU 1</span>
+                            </label>
+                            <label class="gpu-option">
+                                <input type="radio" name="gpu_choice" value="GPU2" hidden>
+                                <span class="gpu-label">GPU 2</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-title">
+                            <span>📝 文本输入</span>
+                        </div>
+                        <textarea 
+                            class="text-input-area" 
+                            placeholder="输入要生成视频的文字描述..."
+                            name="target_text"></textarea>
+                    </div>
+                    
+                    <div class="generate-section">
+                        <button type="submit" class="neon-btn neon-btn-glow generate-btn">
+                                    🎥 开始生成视频
+                                </button>
+                        
+                        <div class="progress-section" id="progressSection">
+                            <div class="progress-info">
+                                <span class="progress-status" id="progressStatus">生成中...</span>
+                                <span id="progressPercent">0%</span>
+                            </div>
+                            <div class="neon-progress">
+                                <div class="neon-progress-bar" id="progressBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
     <script>
-        document.getElementById('videoForm').addEventListener('submit', function (e) {
-            e.preventDefault();
+        function getStatusText(progress) {
+            if (progress < 20) return '初始化模型...';
+            if (progress < 40) return '处理音频输入...';
+            if (progress < 60) return '生成关键帧...';
+            if (progress < 80) return '渲染视频...';
+            return '最终处理...';
+        }
 
-            const formData = new FormData(this);
+        // 音频上传处理与视频预览逻辑
+        const uploadBtn = document.getElementById('uploadAudioBtn');
+        const audioInput = document.getElementById('refAudioInput');
+        const refAudioPath = document.getElementById('refAudioPath');
+        const videoPreview = document.getElementById('videoPreview');
 
-            fetch('/video_generation', {
-                method: 'POST',
-                body: formData
-            })
-                .then(res => res.json())
-                .then(data => {
-                    console.log("后端返回:", data);
-                    if (data.status === 'success') {
-                        const videoEl = document.getElementById('outputVideo');
-                        const newSrc = data.video_path + '?t=' + new Date().getTime();
-                        videoEl.src = newSrc;
-                        videoEl.load();
-                        videoEl.play().catch(err => console.warn('自动播放被阻止:', err));
-                    } else {
-                        alert('视频生成失败！');
-                    }
-                })
-                .catch(err => console.error('错误:', err));
+        uploadBtn.addEventListener('click', () => audioInput.click());
+        audioInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const fd = new FormData();
+            fd.append('audio', file);
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '上传中...';
+
+            try {
+                const resp = await fetch('/save_audio', { method: 'POST', body: fd });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    refAudioPath.value = data.path || '';
+                } else {
+                    alert('上传失败: ' + (data.message || '未知错误'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('上传失败，请检查控制台');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '上传';
+            }
         });
 
+        // 替换预览区域为 video 元素并播放
+        function showGeneratedVideo(videoPath) {
+            // 清空预览
+            videoPreview.innerHTML = '';
+            const v = document.createElement('video');
+            v.controls = true; v.autoplay = true; v.muted = false; v.style.width = '100%'; v.style.height = '100%';
+
+            // 如果后端返回的是完整路径或相对路径，尽量规范为可访问URL
+            let src = videoPath;
+            if (src && !src.startsWith('http') && !src.startsWith('/')) {
+                // 假设返回 'static/videos/xxx.mp4'
+                src = '/' + src.replace(/^\.\//, '');
+            }
+
+            v.src = src;
+            videoPreview.appendChild(v);
+        }
+
+        // 在表单提交后显示视频（替换原逻辑中 alert）
+        const form = document.getElementById('videoGenForm');
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const generateBtn = document.querySelector('.generate-btn');
+            const progressSection = document.getElementById('progressSection');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            const renderStatus = document.getElementById('renderStatus');
+
+            progressSection.style.display = 'block';
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '生成中...';
+
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                progressBar.style.width = `${progress}%`;
+                progressPercent.textContent = `${Math.round(progress)}%`;
+                renderStatus.textContent = getStatusText(progress);
+            }, 500);
+
+            try {
+                const response = await fetch('/video_generation', { method: 'POST', body: formData });
+                const result = await response.json();
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                progressPercent.textContent = '100%';
+                renderStatus.textContent = '生成完成';
+
+                if (result.status === 'success' && result.video_path) {
+                    // 直接在预览区显示视频
+                    showGeneratedVideo(result.video_path);
+                } else {
+                    alert(result.message || '未返回视频路径');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                clearInterval(progressInterval);
+                renderStatus.textContent = '生成失败';
+                alert('生成失败，请查看控制台');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '🎥 重新生成';
+                setTimeout(() => { progressSection.style.display = 'none'; }, 1000);
+            }
+        });
     </script>
-
 </body>
-
 </html>

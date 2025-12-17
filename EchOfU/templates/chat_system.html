@@ -1,274 +1,644 @@
 <!DOCTYPE html>
-<html lang="zh">
-
+<html lang="zh" class="futuristic-theme">
 <head>
     <meta charset="UTF-8">
-    <title>实时对话系统</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人机对话 | SYNCTALK AI</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/system.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    
     <style>
-        body {
-            font-family: 'Microsoft YaHei', sans-serif;
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 20px;
-            color: #333;
+        .chat-container {
+            min-height: 100vh;
+            padding: var(--space-4);
         }
-
-        h2 {
+        
+        .chat-header {
+            margin-bottom: var(--space-6);
             text-align: center;
-            color: #2c3e50;
-            margin-bottom: 30px;
         }
-
-        .video-page-container {
+        
+        .chat-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00c6ff, #7e57c2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-2);
+        }
+        
+        .chat-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+        }
+        
+        .chat-main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: var(--space-4);
+            height: calc(100vh - 200px);
+        }
+        
+        @media (max-width: 1200px) {
+            .chat-main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .chat-main-grid {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+        
+        .voice-section {
             display: flex;
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            flex-direction: column;
+            gap: var(--space-4);
         }
-
-        .video-display {
+        
+        .voice-recorder {
             flex: 1;
-            padding: 20px;
+            background: var(--surface-primary);
+            border: 1px solid rgba(0, 198, 255, 0.3);
+            border-radius: 16px;
+            padding: var(--space-4);
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
         }
-
-        .video-display video {
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            margin-bottom: 20px;
-        }
-
-        .form-section {
-            flex: 1;
-            padding: 20px;
-            background: #f9f9f9;
-            border-left: 1px solid #eee;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
-        }
-
-        select, input {
+        
+        .voice-waveform {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-            box-sizing: border-box;
+            height: 100px;
+            margin-bottom: var(--space-4);
+            position: relative;
         }
-
-        .generate-btn {
+        
+        .waveform-canvas {
             width: 100%;
-            padding: 12px;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s;
+            height: 100%;
         }
-
-        .generate-btn:hover {
-            background-color: #2980b9;
+        
+        .voice-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-3);
         }
-
-        .voice-recorder {
-            margin-top: 20px;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        .recorder-title {
-            font-size: 18px;
-            margin-bottom: 15px;
-            color: #2c3e50;
-        }
-
+        
         .record-btn {
-            padding: 12px 24px;
-            background-color: #e74c3c;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6bcb, #7e57c2);
+            border: none;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .record-btn.recording {
+            animation: pulse-glow 1s infinite alternate;
+            background: linear-gradient(135deg, #00d4aa, #00c6ff);
+        }
+        
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 20px #00d4aa; }
+            100% { box-shadow: 0 0 40px #00c6ff; }
+        }
+        
+        .record-btn::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6bcb, #7e57c2, #00c6ff);
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .record-btn:hover::before {
+            opacity: 1;
+        }
+        
+        .record-status {
+            margin-top: var(--space-2);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .chat-display {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+        
+        .chat-video {
+            flex: 1;
+            background: var(--surface-primary);
+            border: 1px solid rgba(0, 198, 255, 0.3);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .video-player {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+            padding: var(--space-4);
+            color: white;
+        }
+        
+        .chat-messages {
+            background: var(--surface-primary);
+            border: 1px solid rgba(0, 198, 255, 0.3);
+            border-radius: 16px;
+            padding: var(--space-4);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .message-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+        
+        .message {
+            padding: var(--space-3);
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        
+        .message.user {
+            align-self: flex-end;
+            background: rgba(0, 243, 255, 0.1);
+            border-left: 3px solid #00c6ff;
+        }
+        
+        .message.ai {
+            align-self: flex-start;
+            background: rgba(185, 103, 255, 0.1);
+            border-left: 3px solid #7e57c2;
+        }
+        
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: var(--space-1);
+        }
+        
+        .config-section {
+            background: var(--surface-primary);
+            border: 1px solid rgba(0, 198, 255, 0.3);
+            border-radius: 16px;
+            padding: var(--space-4);
+            overflow-y: auto;
+        }
+        
+        .config-group {
+            margin-bottom: var(--space-4);
+        }
+        
+        .config-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: var(--space-3);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .config-items {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+        
+        .config-item {
+            background: var(--surface-secondary);
+            border-radius: 8px;
+            padding: var(--space-3);
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .config-item:hover {
+            border-color: #00c6ff;
+        }
+        
+        .config-label {
+            display: block;
+            margin-bottom: var(--space-1);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .config-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .start-chat-btn {
+            width: 100%;
+            padding: var(--space-3);
+            font-size: 1.125rem;
+            margin-top: var(--space-4);
+        }
+        
+        .time-estimate {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: var(--space-2);
+        }
+        
+        .data-indicator {
+            background: rgba(0, 198, 255, 0.1);
+            border-radius: 8px;
+            padding: var(--space-2) var(--space-3);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        
+        .indicator-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .indicator-value {
+            font-weight: 600;
+            color: #00c6ff;
+        }
+        
+        .neon-btn {
+            background: rgba(0, 198, 255, 0.1);
+            border: 1px solid rgba(0, 198, 255, 0.3);
+            color: #00c6ff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .neon-btn:hover {
+            background: rgba(0, 198, 255, 0.2);
+            box-shadow: 0 0 10px rgba(0, 198, 255, 0.3);
+        }
+        
+        .neon-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .neon-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .neon-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .neon-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .neon-slider {
+            background-color: #00c6ff;
+        }
+        
+        input:checked + .neon-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .neon-input {
+            background: rgba(0, 198, 255, 0.1);
+            border: 1px solid rgba(0, 198, 255, 0.3);
+            color: #00c6ff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            width: 100%;
+        }
+        
+        .neon-progress {
+            height: 6px;
+            background: rgba(0, 198, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .neon-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00c6ff, #7e57c2);
+            border-radius: 3px;
+        }
+        
+        .neon-btn-glow {
+            background: linear-gradient(135deg, #00c6ff, #7e57c2);
             color: white;
             border: none;
-            border-radius: 50px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin: 0 auto 15px;
         }
-
-        .record-btn:hover {
-            background-color: #c0392b;
-            transform: scale(1.05);
+        
+        .neon-btn-glow:hover {
+            box-shadow: 0 0 20px rgba(0, 198, 255, 0.5);
         }
-
-        .record-btn.recording {
-            background-color: #2ecc71;
-            animation: pulse 1.5s infinite;
-        }
-
-        .record-btn.recording:hover {
-            background-color: #27ae60;
-        }
-
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 10px rgba(46, 204, 113, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
-            }
-        }
-
-        .timer {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin: 15px 0;
-        }
-
-        .recording-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 10px 0;
-        }
-
-        .recording-dot {
-            width: 12px;
-            height: 12px;
-            background-color: #e74c3c;
-            border-radius: 50%;
-            animation: blink 1.5s infinite;
-        }
-
-        @keyframes blink {
-            0%, 50% {
-                opacity: 1;
-            }
-            51%, 100% {
-                opacity: 0;
-            }
-        }
-
-        .status-message {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #7f8c8d;
+        
+        .floating-card {
+            box-shadow: 0 8px 32px rgba(0, 198, 255, 0.1);
         }
     </style>
 </head>
+<body>
+    <!-- 导航栏 -->
+    <nav style="background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000;">
+        <a href="/" style="color: #00c6ff; font-size: 1.5rem; font-weight: bold; text-decoration: none;">
+            <span>SYNCTALK</span>
+        </a>
+        <ul style="display: flex; gap: 2rem; list-style: none; margin: 0; padding: 0;">
+            <li><a href="/model_training" style="color: #fff; text-decoration: none; transition: color 0.3s;">训练模型</a></li>
+            <li><a href="/video_generation" style="color: #fff; text-decoration: none; transition: color 0.3s;">视频生成</a></li>
+            <li><a href="/chat_system" style="color: #00c6ff; text-decoration: none; font-weight: bold;">人机对话</a></li>
+        </ul>
+    </nav>
 
-<body class="subpage-bg">
-    <h2>实时对话系统</h2>
-    <div class="video-page-container">
-        <div class="video-display">
-            <!-- 语音录制器 -->
-            <div class="voice-recorder">
-                <button id="recordButton" class="record-btn">
-                    <span>●</span> 开始录音
-                </button>
-                <div class="timer" id="timer">00:00</div>
-                <div class="recording-indicator" id="recordingIndicator" style="display: none;">
-                    <div class="recording-dot"></div>
-                    <span>正在录音...</span>
-                </div>
-                <div class="status-message" id="statusMessage">准备录音</div>
-            </div>
-            <!-- 左侧视频显示 -->
-            <video id="chatVideo" controls width="420">
-                <source src="{{ url_for('static', filename='videos/sample.mp4') }}" type="video/mp4">
-            </video>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1 class="chat-title">💬 智能对话系统</h1>
+            <p class="chat-subtitle">实时语音交互与智能响应</p>
         </div>
-
-        <!-- 右侧参数区 -->
-        <div class="form-section">
-            <form id="chatForm">
-                <div class="form-group">
-                    <label>模型名称</label>
-                    <select name="model_name">
-                        <option value="model1">Model 1</option>
-                        <option value="model2">Model 2</option>
-                        <option value="SyncTalk">SyncTalk</option>
-                    </select>
+        
+        <div class="chat-main-grid">
+            <!-- 语音输入区域 -->
+            <div class="voice-section">
+                <div class="voice-recorder floating-card">
+                    <div class="voice-waveform">
+                        <canvas class="waveform-canvas" id="waveform"></canvas>
+                    </div>
+                    
+                    <div class="voice-controls">
+                        <button class="record-btn" id="recordBtn">
+                            <span id="recordIcon">🎙️</span>
+                            <span id="recordText" style="margin-top: 4px;">开始录音</span>
+                        </button>
+                        
+                        <div class="record-status" id="recordStatus">
+                            准备录音
+                        </div>
+                        
+                        <div class="data-indicator">
+                            <span class="indicator-label">录音时长</span>
+                            <span class="indicator-value" id="recordTimer">00:00</span>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label>模型目录地址</label>
-                    <input type="text" name="model_param" placeholder="请输入模型目录路径">
+                
+                <div class="config-item">
+                    <div class="config-label">音频质量</div>
+                    <div class="neon-progress" style="height: 4px;">
+                        <div class="neon-progress-bar" style="width: 85%"></div>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label>语音克隆模型名称</label>
-                    <select name="voice_clone">
-                        <option value="cloneA">Voice Clone A</option>
-                        <option value="cloneB">Voice Clone B</option>
-                    </select>
+            </div>
+            
+            <!-- 对话展示区域 -->
+            <div class="chat-display">
+                <div class="chat-video floating-card">
+                    <video class="video-player" id="chatVideo" poster="{{ url_for('static', filename='images/video-poster.jpg') }}">
+                        <source id="videoSource" src="" type="video/mp4">
+                    </video>
+                    
+                    <div class="video-overlay">
+                        <div class="data-indicator" style="background: transparent; padding: 0;">
+                            <span class="indicator-label">当前对话</span>
+                            <span class="indicator-value">实时生成中...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="video-controls" style="position: absolute; top: 12px; right: 12px; display: flex; gap: 8px;">
+                        <button class="neon-btn" id="fullscreenBtn" style="padding: 4px 8px; font-size: 12px;">
+                            ⛶ 全屏
+                        </button>
+                        <button class="neon-btn" id="downloadBtn" style="padding: 4px 8px; font-size: 12px;">
+                            ⭳ 下载
+                        </button>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label>对话API选择</label>
-                    <select name="api_choice">
-                        <option value="openai">OpenAI API</option>
-                        <option value="azure">Azure Speech API</option>
-                    </select>
+                
+                <div class="chat-messages floating-card">
+                    <h3 class="config-title" style="margin-top: 0;">
+                        <span>📝 对话记录</span>
+                    </h3>
+                    
+                    <div class="message-list" id="messageList">
+                        <div class="message ai">
+                            <div class="config-value">你好！我是AI助手，可以和我进行语音对话。</div>
+                            <div class="message-time">刚刚</div>
+                        </div>
+                    </div>
                 </div>
-
-                <button type="submit" class="generate-btn">🎤 开始对话</button>
-            </form>
+            </div>
+            
+            <!-- 配置区域 -->
+            <div class="config-section floating-card">
+                <div class="config-group">
+                    <h3 class="config-title">
+                        <span>⚙️ 模型配置</span>
+                    </h3>
+                    <div class="config-items">
+                        <div class="config-item">
+                            <div class="config-label">模型名称</div>
+                            <div class="config-value">SyncTalk</div>
+                        </div>
+                        
+                        <div class="config-item">
+                            <div class="config-label">模型路径</div>
+                            <div class="config-value">/SyncTalk/modelwide</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="config-group">
+                    <h3 class="config-title">
+                        <span>🎚️ 参数设置</span>
+                    </h3>
+                    <div class="config-items">
+                        <div class="config-item">
+                            <div class="config-label">语音克隆</div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label class="neon-switch">
+                                    <input type="checkbox" id="voiceCloneToggle" checked>
+                                    <span class="neon-slider"></span>
+                                </label>
+                                <span class="config-value">启用</span>
+                            </div>
+                        </div>
+                        
+                        <div class="config-item">
+                            <div class="config-label">API接口</div>
+                            <select class="neon-input" id="apiSelect" style="width: 100%;">
+                                <option value="glm-4-plus">GLM-4 Plus</option>
+                                <option value="gpt-4">GPT-4</option>
+                                <option value="claude">Claude</option>
+                            </select>
+                        </div>
+                        
+                        <div class="config-item">
+                            <div class="config-label">响应速度</div>
+                            <div class="neon-progress">
+                                <div class="neon-progress-bar" style="width: 70%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="config-group">
+                    <h3 class="config-title">
+                        <span>📊 系统状态</span>
+                    </h3>
+                    <div class="config-items">
+                        <div class="config-item">
+                            <div class="config-label">CPU使用率</div>
+                            <div class="config-value" id="cpuUsage">24%</div>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-label">内存使用</div>
+                            <div class="config-value" id="memoryUsage">3.2/8 GB</div>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-label">网络延迟</div>
+                            <div class="config-value" id="networkLatency">42 ms</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="neon-btn neon-btn-glow start-chat-btn" id="startChatBtn">
+                    🚀 开始对话
+                </button>
+                
+                <div class="time-estimate">
+                    预计生成时间：10-30秒
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // 语音录制功能
-        let mediaRecorder;
-        let audioChunks = [];
+        // 获取DOM元素
+        const recordBtn = document.getElementById('recordBtn');
+        const recordIcon = document.getElementById('recordIcon');
+        const recordText = document.getElementById('recordText');
+        const recordStatus = document.getElementById('recordStatus');
+        const recordTimer = document.getElementById('recordTimer');
+        const waveformCanvas = document.getElementById('waveform');
+        const ctx = waveformCanvas.getContext('2d');
+        const startChatBtn = document.getElementById('startChatBtn');
+        const chatVideo = document.getElementById('chatVideo');
+        const messageList = document.getElementById('messageList');
+        
+        // 状态变量
         let isRecording = false;
-        let startTime;
+        let recordingTime = 0;
         let timerInterval;
+        let mediaRecorder = null;
+        let audioChunks = [];
         
-        const recordButton = document.getElementById('recordButton');
-        const timerDisplay = document.getElementById('timer');
-        const recordingIndicator = document.getElementById('recordingIndicator');
-        const statusMessage = document.getElementById('statusMessage');
-        
-        // 格式化时间显示
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        // 初始化波形图
+        function initWaveform() {
+            waveformCanvas.width = waveformCanvas.offsetWidth;
+            waveformCanvas.height = waveformCanvas.offsetHeight;
+            drawWaveform(false);
         }
         
-        // 更新计时器
+        // 绘制波形图
+        function drawWaveform(animate) {
+            if (!ctx) return;
+            
+            ctx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+            
+            const width = waveformCanvas.width;
+            const height = waveformCanvas.height;
+            const centerY = height / 2;
+            
+            if (animate && isRecording) {
+                // 动态波形
+                ctx.strokeStyle = '#00c6ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let x = 0; x < width; x++) {
+                    const amplitude = Math.sin(x * 0.05 + Date.now() * 0.01) * 
+                                     Math.sin(x * 0.03) * 20;
+                    ctx.lineTo(x, centerY + amplitude);
+                }
+                
+                ctx.stroke();
+                requestAnimationFrame(() => drawWaveform(true));
+            } else {
+                // 静态波形
+                ctx.strokeStyle = 'rgba(0, 198, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                
+                for (let x = 0; x < width; x++) {
+                    const amplitude = Math.sin(x * 0.02) * 10;
+                    ctx.lineTo(x, centerY + amplitude);
+                }
+                
+                ctx.stroke();
+            }
+        }
+        
+        // 更新录音计时器
         function updateTimer() {
-            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-            timerDisplay.textContent = formatTime(elapsedSeconds);
+            recordingTime++;
+            const minutes = Math.floor(recordingTime / 60);
+            const seconds = recordingTime % 60;
+            recordTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
         
         // 开始录音
@@ -278,52 +648,35 @@
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
                 
-                mediaRecorder.ondataavailable = event => {
+                mediaRecorder.ondataavailable = (event) => {
                     audioChunks.push(event.data);
                 };
                 
-                mediaRecorder.onstop = () => {
+                mediaRecorder.onstop = async () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    
-                    // 创建FormData并发送到服务器
-                    const formData = new FormData();
-                    formData.append('audio', audioBlob, 'input.wav');
-                    
-                    fetch('/save_audio', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            statusMessage.textContent = '录音已结束';
-                        } else {
-                            statusMessage.textContent = '保存录音失败';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('保存录音错误:', error);
-                        statusMessage.textContent = '保存录音时出错';
-                    });
-                    
-                    // 停止所有音频轨道
+                    await uploadAudio(audioBlob);
                     stream.getTracks().forEach(track => track.stop());
                 };
                 
                 mediaRecorder.start();
                 isRecording = true;
-                recordButton.innerHTML = '<span>■</span> 停止录音';
-                recordButton.classList.add('recording');
-                recordingIndicator.style.display = 'flex';
-                statusMessage.textContent = '正在录音...';
+                recordBtn.classList.add('recording');
+                recordIcon.textContent = '⏹️';
+                recordText.textContent = '停止录音';
+                recordStatus.textContent = '录音中...';
+                recordStatus.style.color = '#00d4aa';
                 
-                // 启动计时器
-                startTime = Date.now();
+                // 开始计时
+                recordingTime = 0;
                 timerInterval = setInterval(updateTimer, 1000);
                 
+                // 开始绘制动态波形
+                drawWaveform(true);
+                
             } catch (error) {
-                console.error('获取麦克风权限失败:', error);
-                statusMessage.textContent = '无法访问麦克风，请检查权限设置';
+                console.error('录音失败:', error);
+                alert('无法访问麦克风，请检查权限设置');
+                stopRecording();
             }
         }
         
@@ -332,18 +685,124 @@
             if (mediaRecorder && isRecording) {
                 mediaRecorder.stop();
                 isRecording = false;
-                recordButton.innerHTML = '<span>●</span> 开始录音';
-                recordButton.classList.remove('recording');
-                recordingIndicator.style.display = 'none';
-                statusMessage.textContent = '录音完成，正在保存...';
-                
-                // 停止计时器
                 clearInterval(timerInterval);
+                
+                recordBtn.classList.remove('recording');
+                recordIcon.textContent = '🎙️';
+                recordText.textContent = '开始录音';
+                recordStatus.textContent = '处理中...';
+                recordStatus.style.color = '#00c6ff';
+                
+                // 停止动态波形
+                drawWaveform(false);
             }
         }
         
-        // 录音按钮点击事件
-        recordButton.addEventListener('click', () => {
+        // 上传音频到服务器
+        async function uploadAudio(audioBlob) {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'input.wav');
+            
+            try {
+                const response = await fetch('/save_audio', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    recordStatus.textContent = '音频上传成功';
+                    
+                    // 添加用户消息
+                    addMessage('user', '已上传语音消息');
+                    
+                    // 开始生成视频
+                    await generateVideo();
+                } else {
+                    recordStatus.textContent = '上传失败: ' + result.message;
+                    recordStatus.style.color = '#f44336';
+                }
+            } catch (error) {
+                console.error('上传失败:', error);
+                recordStatus.textContent = '上传失败，请重试';
+                recordStatus.style.color = '#f44336';
+            }
+        }
+        
+        // 生成视频
+        async function generateVideo() {
+            recordStatus.textContent = '正在生成视频...';
+            
+            const formData = new FormData();
+            formData.append('model_name', 'SyncTalk');
+            formData.append('model_param', '/SyncTalk/modelwide');
+            formData.append('voice_clone', document.getElementById('voiceCloneToggle').checked ? 'enable' : 'disable');
+            formData.append('api_choice', document.getElementById('apiSelect').value);
+            
+            try {
+                const response = await fetch('/chat_system', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    recordStatus.textContent = '视频生成成功';
+                    recordStatus.style.color = '#00d4aa';
+                    
+                    // 更新视频播放器
+                    if (result.video_path) {
+                        chatVideo.src = result.video_path;
+                        chatVideo.load();
+                        chatVideo.play().catch(e => console.log('自动播放失败:', e));
+                    }
+                    
+                    // 添加AI消息
+                    setTimeout(() => {
+                        addMessage('ai', '已生成回应视频');
+                    }, 1000);
+                } else {
+                    recordStatus.textContent = '生成失败';
+                    recordStatus.style.color = '#f44336';
+                }
+            } catch (error) {
+                console.error('生成视频失败:', error);
+                recordStatus.textContent = '生成失败，请重试';
+                recordStatus.style.color = '#f44336';
+            }
+        }
+        
+        // 添加消息到对话列表
+        function addMessage(type, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const now = new Date();
+            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            messageDiv.innerHTML = `
+                <div class="config-value">${content}</div>
+                <div class="message-time">${timeString}</div>
+            `;
+            
+            messageList.appendChild(messageDiv);
+            messageList.scrollTop = messageList.scrollHeight;
+        }
+        
+        // 更新系统状态
+        function updateSystemStatus() {
+            document.getElementById('cpuUsage').textContent = 
+                `${Math.floor(Math.random() * 20 + 20)}%`;
+            document.getElementById('memoryUsage').textContent = 
+                `${(Math.random() * 1 + 3).toFixed(1)}/8 GB`;
+            document.getElementById('networkLatency').textContent = 
+                `${Math.floor(Math.random() * 30 + 30)} ms`;
+        }
+        
+        // 事件监听器
+        recordBtn.addEventListener('click', function() {
             if (!isRecording) {
                 startRecording();
             } else {
@@ -351,28 +810,50 @@
             }
         });
         
-        document.getElementById('chatForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-
-            fetch('/chat_system', {
-                method: 'POST',
-                body: formData
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        const videoEl = document.getElementById('chatVideo');
-                        const newSrc = data.video_path + '?t=' + new Date().getTime();
-                        videoEl.src = newSrc;
-                        videoEl.load();
-                        videoEl.play();
-                        alert('对话完成！');
-                    }
-                })
-                .catch(err => console.error('错误:', err));
+        startChatBtn.addEventListener('click', async function() {
+            this.disabled = true;
+            this.textContent = '处理中...';
+            
+            try {
+                await generateVideo();
+            } finally {
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.textContent = '🚀 开始对话';
+                }, 2000);
+            }
         });
+        
+        document.getElementById('fullscreenBtn').addEventListener('click', function() {
+            if (chatVideo.requestFullscreen) {
+                chatVideo.requestFullscreen();
+            } else if (chatVideo.webkitRequestFullscreen) {
+                chatVideo.webkitRequestFullscreen();
+            }
+        });
+        
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            if (chatVideo.src) {
+                const a = document.createElement('a');
+                a.href = chatVideo.src;
+                a.download = 'chat_video.mp4';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                alert('请先生成视频');
+            }
+        });
+        
+        // 初始化
+        window.addEventListener('load', () => {
+            initWaveform();
+            setInterval(updateSystemStatus, 5000);
+            updateSystemStatus();
+        });
+        
+        // 响应式调整波形图大小
+        window.addEventListener('resize', initWaveform);
     </script>
 </body>
-
 </html>

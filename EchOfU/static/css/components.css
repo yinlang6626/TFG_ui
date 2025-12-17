@@ -1,0 +1,104 @@
+/* static/css/futuristic-components.css - 明亮样式调整 */
+/* 按钮样式 */
+.neon-btn {
+    position: relative;
+    padding: var(--space-2) var(--space-4);
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.neon-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--neon-blue) 0%, var(--neon-purple) 50%, var(--neon-pink) 100%);
+    z-index: -2;
+    opacity: 0.12;
+}
+
+.neon-btn::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    background: var(--surface-primary);
+    border-radius: calc(var(--radius-md) - 1px);
+    z-index: -1;
+    transition: opacity var(--transition-normal);
+}
+
+.neon-btn:hover::after { opacity: 0.6; }
+.neon-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-strong); }
+.neon-btn:active { transform: translateY(0); }
+
+.neon-btn-glow { animation: glow-pulse 3s infinite alternate; }
+@keyframes glow-pulse { 0%,100%{ box-shadow: var(--shadow-soft);} 50%{ box-shadow: var(--shadow-strong);} }
+
+/* 选择态按钮 */
+.neon-btn.selected {
+    background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+    color: #fff;
+    box-shadow: var(--shadow-strong);
+}
+
+/* 浮动卡片 */
+.floating-card {
+    background: var(--surface-primary);
+    backdrop-filter: blur(6px);
+    border: var(--border-neon);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+}
+
+.floating-card::before {
+    content: '';
+    position: absolute;
+    top: -40%; left: -40%; width: 180%; height: 180%;
+    background: linear-gradient(45deg, transparent 30%, rgba(43,140,255,0.06) 50%, transparent 70%);
+    transform: rotate(45deg); transition: transform 0.6s ease; opacity: 0;
+}
+.floating-card:hover::before { opacity: 1; transform: rotate(45deg) translate(15%,15%); }
+.floating-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-strong); }
+
+/* 表单控件 */
+.neon-input {
+    width: 100%; padding: var(--space-2) var(--space-3);
+    background: var(--surface-secondary);
+    border: 1px solid rgba(43,140,255,0.12);
+    border-radius: var(--radius-md);
+    color: var(--text-primary); font-size: 14px; transition: all var(--transition-normal);
+}
+.neon-input:focus { outline: none; border-color: var(--neon-blue); box-shadow: 0 0 0 4px rgba(43,140,255,0.06); }
+.neon-input::placeholder { color: var(--text-secondary); }
+
+/* 进度条 */
+.neon-progress { width:100%; height:8px; background: var(--surface-secondary); border-radius: var(--radius-full); overflow:hidden; }
+.neon-progress-bar { height:100%; background: linear-gradient(90deg,var(--neon-blue),var(--neon-purple)); border-radius: var(--radius-full); transition: width .3s ease; }
+.neon-progress-bar::after { content:''; position:absolute; inset:0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: shimmer 2s infinite; }
+@keyframes shimmer { 0%{ transform: translateX(-100%);} 100%{ transform: translateX(100%);} }
+
+/* 数据指示器 */
+.data-indicator { display:flex; align-items:center; gap:var(--space-2); padding: var(--space-2) var(--space-3); background: var(--surface-secondary); border-radius: var(--radius-md); border-left: 3px solid var(--neon-blue); }
+.indicator-label { color: var(--text-secondary); font-size:12px; font-weight:500; }
+.indicator-value { color: var(--text-primary); font-size:14px; font-weight:600; margin-left:auto; }
+
+/* 开关控件 */
+.neon-switch { position: relative; display:inline-block; width:50px; height:26px; }
+.neon-switch input { opacity:0; width:0; height:0; }
+.neon-slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color: var(--surface-secondary); border:1px solid rgba(43,140,255,0.12); border-radius: var(--radius-full); transition:.3s; }
+.neon-slider:before { position:absolute; content:""; height:18px; width:18px; left:4px; bottom:3px; background-color: var(--neon-blue); border-radius:50%; transition:.3s; box-shadow:0 6px 18px rgba(43,140,255,0.06); }
+input:checked + .neon-slider { background-color: rgba(43,140,255,0.08); }
+input:checked + .neon-slider:before { transform: translateX(24px); background-color: var(--neon-purple); box-shadow:0 10px 26px rgba(124,92,255,0.08); }
