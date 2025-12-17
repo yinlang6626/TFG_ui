@@ -300,7 +300,6 @@
             audio.addEventListener('error', function() {
                 playerContainer.innerHTML = `
                     <div class="preview-placeholder">
-                        <div class="preview-icon">❌</div>
                         <h3>音频加载失败</h3>
                         <p>请检查路径是否正确</p>
                         <small style="color: var(--text-secondary);">${audioPath}</small>
@@ -388,9 +387,9 @@
                             <div style="font-size: 2rem; color: var(--neon-green); margin-bottom: var(--space-2);">✅</div>
                             <div style="color: var(--text-primary); font-weight: 600; margin-bottom: var(--space-2);">特征提取成功!</div>
                             <div style="color: var(--text-secondary); font-size: 0.875rem;">
-                                <div>🎭 说话人ID: <strong>${targetAudioId}</strong></div>
-                                <div>📅 提取时间: <strong>${new Date().toLocaleString()}</strong></div>
-                                <div>💡 现在可以使用此说话人特征生成新的音频</div>
+                                <div> 说话人ID: <strong>${targetAudioId}</strong></div>
+                                <div> 提取时间: <strong>${new Date().toLocaleString()}</strong></div>
+                                <div> 现在可以使用此说话人特征生成新的音频</div>
                             </div>
                         </div>
                     `;
@@ -445,7 +444,7 @@
                 const btn = document.getElementById('refreshBtn');
                 if (btn) {
                     const originalText = btn.innerHTML;
-                    btn.innerHTML = '✅ 已刷新';
+                    btn.innerHTML = ' 已刷新';
                     btn.style.color = 'var(--neon-green)';
 
                     setTimeout(() => {
@@ -460,7 +459,7 @@
                 const btn = document.getElementById('refreshBtn');
                 if (btn) {
                     const originalText = btn.innerHTML;
-                    btn.innerHTML = '❌ 刷新失败';
+                    btn.innerHTML = ' 刷新失败';
                     btn.style.color = 'var(--neon-red)';
 
                     setTimeout(() => {
@@ -542,9 +541,9 @@
                                 您的浏览器不支持音频播放
                             </audio>
                             <div style="text-align: center; margin-top: var(--space-2); color: var(--neon-green);">
-                                <small>✅ 生成完成 - 音频: ${genAudioId}</small>
-                                <br><small>📁 文件路径: ${audioPath}</small>
-                                <br><small>📝 文本内容: "${generateText}"</small>
+                                <small> 生成完成 - 音频: ${genAudioId}</small>
+                                <br><small> 文件路径: ${audioPath}</small>
+                                <br><small> 文本内容: "${generateText}"</small>
                             </div>
                         `;
 
@@ -581,4 +580,3 @@
     </script>
 </body>
 </html>
-{#ToDo : 刷新逻辑有问题#}
