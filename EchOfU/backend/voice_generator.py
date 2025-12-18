@@ -6,69 +6,7 @@ import torch
 from datetime import datetime
 from openvoice.api import BaseSpeakerTTS, ToneColorConverter
 from openvoice import se_extractor
-
-
-class PathManager:
-    """路径管理器，统一处理所有路径相关逻辑"""
-
-    def __init__(self):
-        self.project_root = self._get_project_root()
-
-    def _get_project_root(self):
-        """获取项目根目录路径 - 递归向上查找EchOfU目录"""
-        def find_echofu_root(start_dir):
-            current_dir = os.path.abspath(start_dir)
-
-            # 如果当前目录名是EchOfU，检查是否有OpenVoice目录
-            if os.path.basename(current_dir) == "EchOfU":
-                if os.path.exists(os.path.join(current_dir, "OpenVoice")):
-                    return current_dir
-
-            # 如果当前目录包含EchOfU子目录，使用它
-            echofu_subdir = os.path.join(current_dir, "EchOfU")
-            if os.path.exists(echofu_subdir) and os.path.exists(os.path.join(echofu_subdir, "OpenVoice")):
-                return echofu_subdir
-
-            # 如果已经到达根目录还没找到，返回None
-            parent_dir = os.path.dirname(current_dir)
-            if parent_dir == current_dir:
-                return None
-
-            # 递归向上查找
-            return find_echofu_root(parent_dir)
-
-        result = find_echofu_root(os.getcwd())
-        if result is None:
-            raise FileNotFoundError("无法找到EchOfU项目根目录")
-        return result
-
-    def get_model_path(self, *path_parts):
-        """获取模型相关路径"""
-        return os.path.join(self.project_root, *path_parts)
-
-    def get_openvoice_v2_path(self, *path_parts):
-        """获取OpenVoice V2相关路径"""
-        return self.get_model_path("OpenVoice/checkpoints_v2", *path_parts)
-
-    def get_speaker_features_path(self):
-        """获取说话人特征文件路径"""
-        return os.path.join(self.project_root, "models/OpenVoice/speaker_features.json")
-
-    def get_ref_voice_path(self, filename=None):
-        """获取参考音频文件路径"""
-        if filename:
-            return os.path.join(self.project_root, "static/voices/ref_voices", filename)
-        return os.path.join(self.project_root, "static/voices/ref_voices")
-
-    def get_res_voice_path(self, filename=None):
-        """获取生成音频文件路径"""
-        if filename:
-            return os.path.join(self.project_root, "static/voices/res_voices", filename)
-        return os.path.join(self.project_root, "static/voices/res_voices")
-
-    def get_output_voice_path(self, timestamp):
-        """生成输出语音文件路径"""
-        return self.get_res_voice_path(f"generated_{timestamp}.wav")
+from path_manager import PathManager
 
 
 class ModelDownloader:
@@ -126,13 +64,13 @@ class AudioProcessor:
     def extract_audio_from_video(self, video_path):
         """从视频中提取音频"""
         try:
-            # 确保输出目录存在 - 使用PathManager保存到ref_voices目录
+            # 确保输出目录存在 - 使用PathManager
             audio_dir = self.path_manager.get_ref_voice_path()
-            os.makedirs(audio_dir, exist_ok=True)
+            self.path_manager.ensure_directory(audio_dir)
 
             # 生成音频文件名 - 使用PathManager
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            audio_output = os.path.join(audio_dir, f"extracted_{timestamp}.wav")
+            audio_output = self.path_manager.get_extracted_voice_path(timestamp)
 
             # 使用ffmpeg提取音频
             cmd = [
@@ -202,8 +140,8 @@ class SpeakerFeatureManager:
     def save_feature(self, speaker_id, reference_audio, se_tensor):
         """保存说话人特征"""
         try:
-            # 保存特征张量 - 使用PathManager获取绝对路径
-            feature_path = self.path_manager.get_model_path("models/OpenVoice", f"{speaker_id}_se.pth")
+            # 保存特征张量 - 使用PathManager的专门方法
+            feature_path = self.path_manager.get_speaker_feature_tensor_path(speaker_id)
             torch.save(se_tensor, feature_path)
 
             # 保存元数据
@@ -254,8 +192,8 @@ class SpeakerFeatureManager:
 
             print(f"[SpeakerFeatureManager] 开始提取说话人特征: {speaker_id}")
 
-            # 提取说话人特征 - 使用PathManager获取processed目录的绝对路径
-            processed_dir = self.path_manager.get_model_path("processed")
+            # 提取说话人特征 - 使用PathManager获取processed目录
+            processed_dir = self.path_manager.get_processed_path()
             target_se_result = se_extractor.get_se(
                 reference_audio,
                 vc_model=tone_converter,
@@ -317,14 +255,14 @@ class ModelManager:
         """确保必要目录存在"""
         dirs = [
             self.path_manager.get_openvoice_v2_path(),
-            self.path_manager.get_model_path("OpenVoice/checkpoints/base_speakers"),
-            self.path_manager.get_model_path("models/OpenVoice"),
+            self.path_manager.get_root_begin_path("OpenVoice/checkpoints/base_speakers"),
+            self.path_manager.get_openvoice_model_path(),
             self.path_manager.get_ref_voice_path(),                    # 参考音频目录
             self.path_manager.get_res_voice_path(),                    # 结果音频目录
-            self.path_manager.get_model_path("processed")
+            self.path_manager.get_processed_path()
         ]
         for dir_path in dirs:
-            os.makedirs(dir_path, exist_ok=True)
+            self.path_manager.ensure_directory(dir_path)
             print(f"[ModelManager] 确保目录存在: {dir_path}")
 
     def _check_models_exist(self):
@@ -587,9 +525,8 @@ class OpenVoiceService:
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             output_path = self.path_manager.get_output_voice_path(timestamp)
 
-            # 确保输出目录存在
-            output_dir = os.path.dirname(output_path)
-            os.makedirs(output_dir, exist_ok=True)
+            # 确保输出目录存在 - 使用PathManager
+            self.path_manager.ensure_file_directory(output_path)
 
             print(f"[OpenVoice] 输出文件路径: {output_path}")
 
@@ -627,14 +564,14 @@ class OpenVoiceService:
             target_se = speaker_info['se']
 
             # 1. 先用基础模型生成语音（使用MeloTTS）
-            temp_audio = os.path.join(self.path_manager.project_root, f"temp_base_{speaker_id}_{int(time.time())}.wav")
+            temp_audio = self.path_manager.get_temp_voice_path(f"base_{speaker_id}")
             base_speaker_path = self._generate_base_speech(text, temp_audio, base_speaker_key)
 
             if not base_speaker_path:
                 return None
 
             # 2. 加载基础说话人特征 - 使用PathManager
-            source_se_path = self.path_manager.get_model_path("OpenVoice/checkpoints_v2/base_speakers/ses", f"{base_speaker_key.lower()}.pth")
+            source_se_path = self.path_manager.get_root_begin_path("OpenVoice/checkpoints_v2/base_speakers/ses", f"{base_speaker_key.lower()}.pth")
             if os.path.exists(source_se_path):
                 source_se = torch.load(source_se_path, map_location=self.model_manager.device)
             else:
