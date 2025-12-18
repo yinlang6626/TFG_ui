@@ -54,9 +54,21 @@ class PathManager:
         """获取说话人特征文件路径"""
         return os.path.join(self.project_root, "models/OpenVoice/speaker_features.json")
 
+    def get_ref_voice_path(self, filename=None):
+        """获取参考音频文件路径"""
+        if filename:
+            return os.path.join(self.project_root, "static/voices/ref_voices", filename)
+        return os.path.join(self.project_root, "static/voices/ref_voices")
+
+    def get_res_voice_path(self, filename=None):
+        """获取生成音频文件路径"""
+        if filename:
+            return os.path.join(self.project_root, "static/voices/res_voices", filename)
+        return os.path.join(self.project_root, "static/voices/res_voices")
+
     def get_output_voice_path(self, timestamp):
         """生成输出语音文件路径"""
-        return os.path.join(self.project_root, f"static/voices/generated_{timestamp}.wav")
+        return self.get_res_voice_path(f"generated_{timestamp}.wav")
 
 
 class ModelDownloader:
@@ -114,8 +126,8 @@ class AudioProcessor:
     def extract_audio_from_video(self, video_path):
         """从视频中提取音频"""
         try:
-            # 确保输出目录存在 - 使用PathManager
-            audio_dir = self.path_manager.get_model_path("static/audios")
+            # 确保输出目录存在 - 使用PathManager保存到ref_voices目录
+            audio_dir = self.path_manager.get_ref_voice_path()
             os.makedirs(audio_dir, exist_ok=True)
 
             # 生成音频文件名 - 使用PathManager
@@ -307,11 +319,13 @@ class ModelManager:
             self.path_manager.get_openvoice_v2_path(),
             self.path_manager.get_model_path("OpenVoice/checkpoints/base_speakers"),
             self.path_manager.get_model_path("models/OpenVoice"),
-            self.path_manager.get_model_path("static/voices"),
+            self.path_manager.get_ref_voice_path(),                    # 参考音频目录
+            self.path_manager.get_res_voice_path(),                    # 结果音频目录
             self.path_manager.get_model_path("processed")
         ]
         for dir_path in dirs:
             os.makedirs(dir_path, exist_ok=True)
+            print(f"[ModelManager] 确保目录存在: {dir_path}")
 
     def _check_models_exist(self):
         """检查模型文件是否存在"""
