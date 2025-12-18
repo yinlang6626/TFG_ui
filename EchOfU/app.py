@@ -45,7 +45,8 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 限制上传文件大小为100MB
 
 # 确保必要的目录结构存在
-for folder in ['static/uploads', 'static/audios', 'static/videos', 'static/images', 'static/history']:
+for folder in ['static/uploads', 'static/audios', 'static/videos', 'static/images', 'static/history',
+               'static/voices/ref_voices', 'static/voices/res_voices']:
     os.makedirs(folder, exist_ok=True)
 
 # =============================================================================
@@ -230,11 +231,11 @@ def audio_clone():
                     else:
                         # 如果不是以当前目录开头，直接使用文件名部分
                         relative_path = os.path.basename(generated_audio_path)
-                        # 如果文件在static/voices下，保留路径
-                        if 'static/voices' in generated_audio_path:
-                            parts = generated_audio_path.split('static/voices')
+                        # 如果文件在static/voices/res_voices下，保留路径
+                        if 'static/voices/res_voices' in generated_audio_path:
+                            parts = generated_audio_path.split('static/voices/res_voices')
                             if len(parts) > 1:
-                                relative_path = f"static/voices{parts[1]}"
+                                relative_path = f"static/voices/res_voices{parts[1]}"
 
                     print(f"[音频生成] 路径转换: {generated_audio_path} -> {relative_path}")
 

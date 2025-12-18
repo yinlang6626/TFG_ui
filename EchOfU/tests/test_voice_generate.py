@@ -34,7 +34,7 @@ class TestVoiceSynthesis(unittest.TestCase):
         """测试前准备"""
         # 设置工作目录
         self.project_root = project_root
-        self.test_audio_file = self.project_root / "static/voices/Test_1.mp4"
+        self.test_audio_file = self.project_root / "static/voices/ref_voices/Test_1.mp4"
 
         # 初始化服务实例
         try:
