@@ -3,6 +3,9 @@ import time
 import json
 import subprocess
 import torch
+import librosa
+import soundfile as sf
+import numpy as np
 from datetime import datetime
 from openvoice.api import BaseSpeakerTTS, ToneColorConverter
 from openvoice import se_extractor
@@ -148,6 +151,43 @@ class AudioProcessor:
             else:
                 print(f"[backend.model_trainer] 音频提取失败: {result.stderr}")
                 return None
+
+    # [新增功能] 音频变调 (加分项)
+    def shift_pitch(self, input_path, n_steps):
+        """
+        对音频进行升调或降调
+        :param input_path: 输入音频路径
+        :param n_steps: 半音数，正数升调，负数降调 (例如: 2, -1.5)
+        :return: 处理后的音频路径
+        """
+        if not input_path or not os.path.exists(input_path):
+            print("[AudioProcessor] 输入音频不存在，无法变调")
+            return input_path
+
+        if n_steps == 0:
+            return input_path
+
+        try:
+            print(f"[AudioProcessor] 正在进行变调处理: {n_steps} steps...")
+            # 加载音频 (sr=None 保持原始采样率)
+            y, sr = librosa.load(input_path, sr=None)
+            
+            # 变调处理
+            y_shifted = librosa.effects.pitch_shift(y, sr=sr, n_steps=float(n_steps))
+            
+            # 生成新文件名
+            dir_name = os.path.dirname(input_path)
+            base_name = os.path.splitext(os.path.basename(input_path))[0]
+            output_path = os.path.join(dir_name, f"{base_name}_pitch_{n_steps}.wav")
+            
+            # 保存文件
+            sf.write(output_path, y_shifted, sr)
+            print(f"[AudioProcessor] 变调完成: {output_path}")
+            return output_path
+        except Exception as e:
+            print(f"[AudioProcessor] 变调失败: {e}")
+            # 如果失败，返回原音频，保证流程不中断
+            return input_path
 
         except subprocess.TimeoutExpired:
             print("[backend.model_trainer] 音频提取超时")
