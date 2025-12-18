@@ -1,6 +1,7 @@
 import speech_recognition as sr
 from zhipuai import ZhipuAI
-
+import os
+import shutil
 from .voice_generator import OpenVoiceService
 
 
@@ -12,22 +13,34 @@ def chat_response(data):
     for k, v in data.items():
         print(f"  {k}: {v}")
 
+    # 路径统一
+    res_videos_dir = os.path.join("static", "videos", "res_videos")
+    os.makedirs(res_videos_dir, exist_ok=True)
+    res_voices_dir = os.path.join("static", "voices", "res_voices")
+    os.makedirs(res_voices_dir, exist_ok=True)
+
     # ToDo : 注意这里，与前段对接好录音的存储路径
     # 语音转文字
     # input_audio = "./static/audios/input.wav"
     input_audio = "./SyncTalk/audio/aud.wav"
     input_text = "./static/text/input.txt"
     audio_to_text(input_audio, input_text)
+     # 确保目录存在
+    os.makedirs(os.path.dirname(input_text), exist_ok=True)
+    user_text = audio_to_text(input_audio, input_text)
+    if not user_text:
+        user_text = "你好" # 默认文本防止 crash
 
     # ToDo : 这里考虑一下要不要增加一个配置管理，管理一下api这些
 
     # 大模型回答
-    output_text = "./static/text/output.txt"
+    output_text_file = "./static/text/output.txt"
     api_key = "31af4e1567ad48f49b6d7b914b4145fb.MDVLvMiePGYLRJ7M"
     model = "glm-4-plus"
-    ai_response_text = get_ai_response(input_text, output_text, api_key, model)
+    
 
     # 读取AI回复文本
+    ai_response_text = get_ai_response(input_text, output_text_file, api_key, model)
     with open(output_text, 'r', encoding='utf-8') as f:
         ai_response_text = f.read().strip()
 
@@ -41,30 +54,45 @@ def chat_response(data):
     specker_id = data['speaker_id']
     # 列出可用的语音
     available_speakers = ov.list_available_speakers()
-    print(f"[backend.chat_engine] 可用说话人: {available_speakers}")
+    # 如果指定 ID 不在列表里，可能需要 fallback，或者前端保证传对的
+    if speaker_id not in available_speakers:
+        print(f"[backend.chat_engine] Warning: Speaker {speaker_id} not found, using default.")
+        if available_speakers:
+            speaker_id = available_speakers[0]
+    print(f"[backend.chat_engine] 使用说话人: {speaker_id}")
 
-    # 如果用户选择了语音
-    if specker_id in available_speakers:
-        speaker_id = data.get('speaker_id')
-        print(f"[backend.chat_engine] 使用说话人: {speaker_id}")
-    else:
-        print(f"[backend.chat_engine] 说话人无效")
-        return None
-
-
+   
     # OpenVoice语音合成
 
-    voice_path = ov.generate_speech(ai_response_text, speaker_id)
+    generated_temp_path = ov.generate_speech(ai_response_text, speaker_id)
+    # 移动到统一路径
+    voice_path = os.path.join(res_voices_dir, f"chat_resp_{speaker_id}.wav")
+    if generated_temp_path and os.path.exists(generated_temp_path):
+        shutil.move(generated_temp_path, voice_path)
+    else:
+        # Fallback dummy audio
+        voice_path = generated_temp_path
 
     print(f"[backend.chat_engine] OpenVoice语音合成完成: {voice_path}")
 
+    
+
     # 调用ER-NeRF生成视频 ToDo:EN-NeRF待实现
-    video_path = generate_video(voice_path)
+    # 这里简单模拟调用 generate_video 的逻辑
+    # 为了简化，直接构造参数调用 generate_video
+    video_gen_data = {
+        'model_name': data.get('model_name', 'SyncTalk'),
+        'model_param': data.get('model_param', './models/ER-NeRF/default'), # 需确保路径正确
+        'ref_audio': voice_path,
+        'gpu_choice': 'GPU0',
+        'target_text': '', # 已经生成了语音，不需要再生成
+        'speaker_id': speaker_id
+    }
+    from video_generator import generate_video
+    video_path = generate_video(video_gen_data)
     
     # video_path = os.path.join("static", "videos", "chat_response.mp4")
-
     print(f"[backend.chat_engine] 生成视频路径：{video_path}")
-
     return video_path
 
 def audio_to_text(input_audio, input_text):
@@ -119,3 +147,4 @@ def get_ai_response(input_text, output_text, api_key, model):
     print(f"答复已保存到: {output_text}")
 
     return output
+
