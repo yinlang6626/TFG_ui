@@ -21,6 +21,14 @@ from backend.video_generator import generate_video
 from backend.model_trainer import train_model
 from backend.chat_engine import chat_response
 from backend.voice_generator import OpenVoiceService
+from backend.api_handlers import (
+    upload_reference_audio as api_upload_reference_audio,
+    get_reference_audios as api_get_reference_audios,
+    upload_training_video as api_upload_training_video,
+    get_training_videos as api_get_training_videos,
+    get_available_models as api_get_available_models,
+    get_model_details as api_get_model_details
+)
 import psutil
 
 # =============================================================================
@@ -44,9 +52,8 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 限制上传文件大小为100MB
 
-# 确保必要的目录结构存在
-for folder in ['static/uploads', 'static/audios', 'static/videos', 'static/images', 'static/history',
-               'static/voices/ref_voices', 'static/voices/res_voices']:
+# 确保必要的目录结构存在（基本目录）
+for folder in [ 'EchOfU/static/audios', 'EchOfU/static/videos',  'EchOfU/static/history']:
     os.makedirs(folder, exist_ok=True)
 
 # =============================================================================
@@ -88,7 +95,7 @@ def video_generation():
             }
 
             # 保存到历史记录文件
-            history_file = 'static/history/video_generation.json'
+            history_file = 'EchOfU/static/history/video_generation.json'
             if os.path.exists(history_file):
                 with open(history_file, 'r') as f:
                     history = json.load(f)
@@ -331,6 +338,36 @@ def get_cloned_audios():
             'audios': []
         }), 500
 
+@app.route('/api/upload-reference-audio', methods=['POST'])
+def upload_reference_audio():
+    """上传参考音频文件API - 使用backend模块"""
+    return api_upload_reference_audio()
+
+@app.route('/api/reference-audios', methods=['GET'])
+def get_reference_audios():
+    """获取参考音频文件列表API - 使用backend模块"""
+    return api_get_reference_audios()
+
+@app.route('/api/upload-training-video', methods=['POST'])
+def upload_training_video():
+    """上传训练视频文件API - 使用backend模块"""
+    return api_upload_training_video()
+
+@app.route('/api/training-videos', methods=['GET'])
+def get_training_videos():
+    """获取训练视频文件列表API - 使用backend模块"""
+    return api_get_training_videos()
+
+@app.route('/api/available-models', methods=['GET'])
+def get_available_models():
+    """获取可用模型列表API - 使用backend模块"""
+    return api_get_available_models()
+
+@app.route('/api/model-details/<model_type>/<model_name>', methods=['GET'])
+def get_model_details(model_type, model_name):
+    """获取模型详细信息API - 使用backend模块"""
+    return api_get_model_details(model_type, model_name)
+
 @app.route('/chat_system', methods=['GET', 'POST'])
 def chat_system():
     """人机对话页面路由 - 处理实时语音交互与智能响应"""
@@ -378,7 +415,7 @@ def save_audio():
         return jsonify({'status': 'error', 'message': '没有选择文件'})
 
     # 保存音频文件到指定路径
-    audio_path = './static/audios/input.wav'
+    audio_path = 'EchOfU/static/audios/input.wav'
     audio_file.save(audio_path)
 
     return jsonify({'status': 'success', 'message': '音频保存成功', 'path': audio_path})

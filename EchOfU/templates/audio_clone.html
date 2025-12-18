@@ -149,12 +149,29 @@
                         </div>
                         <div class="control-grid">
                             <div>
-                                <label class="indicator-label">原音频路径</label>
-                                <input type="text" class="neon-input"
-                                       placeholder="输入原音频相对路径"
-                                       name="original_audio_path" id="originalAudioPath">
+                                <label class="indicator-label">上传参考音频</label>
+                                <div style="display: flex; gap: var(--space-2); align-items: center;">
+                                    <input type="file" class="neon-input" id="audioFileInput"
+                                           accept=".wav,.mp3,.m4a,.flac,.ogg" style="flex: 1;">
+                                    <button type="button" class="neon-btn neon-btn-primary" id="uploadAudioBtn" disabled>
+                                        上传音频
+                                    </button>
+                                </div>
+                                <div id="uploadStatus" style="margin-top: var(--space-2); color: var(--text-secondary); font-size: 0.875rem;"></div>
+                            </div>
+
+                            <div>
+                                <label class="indicator-label">选择参考音频</label>
+                                <div style="display: flex; gap: var(--space-2); align-items: stretch;">
+                                    <select class="neon-input" name="original_audio_path" id="originalAudioPath" style="flex: 1;">
+                                        <option value="">请选择参考音频</option>
+                                    </select>
+                                    <button type="button" class="neon-btn neon-btn-sm" id="refreshRefAudioBtn" title="刷新参考音频列表">
+                                        刷新
+                                    </button>
+                                </div>
                                 <small style="color: var(--text-secondary); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
-                                    例如: static/voices/example.wav
+                                    选择已有的参考音频进行克隆
                                 </small>
                             </div>
                         </div>
@@ -209,10 +226,15 @@
                         <div class="control-grid">
                             <div>
                                 <label class="indicator-label">克隆音频编号</label>
-                                <select class="neon-input" name="gen_audio_id" id="genAudioId">
-                                    <option value="">请选择克隆音频</option>
-                                    <!-- 选项将通过JavaScript从后端加载 -->
-                                </select>
+                                <div style="display: flex; gap: var(--space-2); align-items: stretch;">
+                                    <select class="neon-input" name="gen_audio_id" id="genAudioId" style="flex: 1;">
+                                        <option value="">请选择克隆音频</option>
+                                        <!-- 选项将通过JavaScript从后端加载 -->
+                                    </select>
+                                    <button type="button" class="neon-btn neon-btn-sm" id="refreshGenAudioBtn" title="刷新克隆音频列表">
+                                        刷新
+                                    </button>
+                                </div>
                                 <small style="color: var(--text-secondary); font-size: 0.875rem; margin-top: var(--space-1); display: block;">
                                     选择已克隆的音频编号
                                 </small>
@@ -229,15 +251,9 @@
                     </div>
 
                     <div class="action-section">
-                        <div class="button-row">
-                            <button type="button" class="neon-btn neon-btn-glow action-btn" id="generateAudioBtn">
-                                生成音频
-                            </button>
-
-                            <button type="button" class="neon-btn action-btn" id="refreshBtn">
-                                刷新音频列表
-                            </button>
-                        </div>
+                        <button type="button" class="neon-btn neon-btn-glow action-btn" id="generateAudioBtn">
+                            生成音频
+                        </button>
 
                         <div class="progress-section" id="generateProgressSection">
                             <div class="progress-info">
@@ -270,13 +286,151 @@
             return '完成处理...';
         }
 
+        // 文件选择相关变量
+        let selectedFile = null;
+
+        // 文件选择事件
+        document.getElementById('audioFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const uploadBtn = document.getElementById('uploadAudioBtn');
+            const uploadStatus = document.getElementById('uploadStatus');
+
+            if (file) {
+                selectedFile = file;
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = `上传 ${file.name}`;
+                uploadStatus.textContent = `已选择: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`;
+                uploadStatus.style.color = 'var(--neon-green)';
+            } else {
+                selectedFile = null;
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = '上传音频';
+                uploadStatus.textContent = '';
+            }
+        });
+
+        // 上传音频文件
+        document.getElementById('uploadAudioBtn').addEventListener('click', async function() {
+            if (!selectedFile) {
+                alert('请先选择要上传的音频文件');
+                return;
+            }
+
+            const btn = this;
+            const uploadStatus = document.getElementById('uploadStatus');
+
+            btn.disabled = true;
+            btn.textContent = '上传中...';
+            uploadStatus.textContent = '正在上传音频文件...';
+
+            try {
+                const formData = new FormData();
+                formData.append('audio', selectedFile);
+
+                const response = await fetch('/api/upload-reference-audio', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    uploadStatus.textContent = `上传成功: ${result.filename}`;
+                    uploadStatus.style.color = 'var(--neon-green)';
+
+                    // 刷新参考音频列表
+                    await loadReferenceAudios();
+
+                    // 清空文件选择
+                    document.getElementById('audioFileInput').value = '';
+                    selectedFile = null;
+                    btn.disabled = true;
+                    btn.textContent = '上传音频';
+
+                } else {
+                    uploadStatus.textContent = `上传失败: ${result.message}`;
+                    uploadStatus.style.color = 'var(--neon-red)';
+                }
+            } catch (error) {
+                console.error('上传音频失败:', error);
+                uploadStatus.textContent = '上传失败，请检查网络连接';
+                uploadStatus.style.color = 'var(--neon-red)';
+            } finally {
+                if (btn.textContent === '上传中...') {
+                    btn.disabled = false;
+                    btn.textContent = '上传音频';
+                }
+            }
+        });
+
+        // 加载参考音频列表
+        async function loadReferenceAudios() {
+            try {
+                const response = await fetch('/api/reference-audios');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const select = document.getElementById('originalAudioPath');
+                    select.innerHTML = '<option value="">请选择参考音频</option>';
+
+                    data.files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file.relative_path;
+                        option.textContent = `${file.filename} (${file.size_mb}MB)`;
+                        option.title = `创建时间: ${file.created_time}`;
+                        select.appendChild(option);
+                    });
+
+                    console.log(`[UI] 加载了 ${data.files.length} 个参考音频`);
+                } else {
+                    console.error('加载参考音频列表失败:', data.message);
+                }
+            } catch (error) {
+                console.error('加载参考音频列表出错:', error);
+            }
+        }
+
+        // 刷新参考音频列表按钮事件
+        document.getElementById('refreshRefAudioBtn').addEventListener('click', async function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = '刷新中...';
+            btn.style.color = 'var(--neon-blue)';
+
+            try {
+                await loadReferenceAudios();
+
+                btn.innerHTML = '已刷新';
+                btn.style.color = 'var(--neon-green)';
+
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    btn.style.color = '';
+                }, 2000);
+            } catch (error) {
+                console.error('刷新参考音频列表失败:', error);
+
+                btn.innerHTML = '刷新失败';
+                btn.style.color = 'var(--neon-red)';
+
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    btn.style.color = '';
+                }, 2000);
+            }
+        });
+
         // 加载原音频
         document.getElementById('loadAudioBtn').addEventListener('click', function() {
             const audioPath = document.getElementById('originalAudioPath').value.trim();
             const playerContainer = document.getElementById('originalAudioPlayer');
 
             if (!audioPath) {
-                alert('请输入原音频路径');
+                alert('请选择原音频');
                 return;
             }
 
@@ -433,40 +587,75 @@
             }
         }
 
-        // 强制刷新音频数据
+        // 刷新克隆音频列表按钮事件
+        document.getElementById('refreshGenAudioBtn').addEventListener('click', async function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = '刷新中...';
+            btn.style.color = 'var(--neon-blue)';
+
+            try {
+                await loadClonedAudios();
+
+                btn.innerHTML = '已刷新';
+                btn.style.color = 'var(--neon-green)';
+
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    btn.style.color = '';
+                }, 2000);
+            } catch (error) {
+                console.error('刷新克隆音频列表失败:', error);
+
+                btn.innerHTML = '刷新失败';
+                btn.style.color = 'var(--neon-red)';
+
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    btn.style.color = '';
+                }, 2000);
+            }
+        });
+
+        // 加载克隆音频列表
+        async function loadClonedAudios() {
+            try {
+                const response = await fetch('/api/cloned-audios');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const select = document.getElementById('genAudioId');
+                    select.innerHTML = '<option value="">请选择克隆音频</option>';
+
+                    data.audios.forEach(audio => {
+                        const option = document.createElement('option');
+                        option.value = audio.id;
+                        option.textContent = `${audio.id} - ${audio.name} (${audio.created_at})`;
+                        option.title = `状态: ${audio.status}\n创建时间: ${audio.created_at}\n参考音频: ${audio.reference_audio}`;
+                        select.appendChild(option);
+                    });
+
+                    console.log(`[UI] 加载了 ${data.audios.length} 个克隆音频`);
+                } else {
+                    console.error('加载克隆音频列表失败:', data.message);
+                }
+            } catch (error) {
+                console.error('加载克隆音频列表出错:', error);
+            }
+        }
+
+        // 刷新音频数据（简化版，不再需要按钮反馈）
         async function refreshAudioData() {
             try {
                 console.log('正在刷新音频数据...');
                 await window.AudioUtils.refreshAllAudioSelects();
                 console.log('音频数据刷新完成');
-
-                // 显示刷新成功提示
-                const btn = document.getElementById('refreshBtn');
-                if (btn) {
-                    const originalText = btn.innerHTML;
-                    btn.innerHTML = ' 已刷新';
-                    btn.style.color = 'var(--neon-green)';
-
-                    setTimeout(() => {
-                        btn.innerHTML = originalText;
-                        btn.style.color = '';
-                    }, 2000);
-                }
             } catch (error) {
                 console.error('刷新音频数据失败:', error);
-
-                // 显示刷新失败提示
-                const btn = document.getElementById('refreshBtn');
-                if (btn) {
-                    const originalText = btn.innerHTML;
-                    btn.innerHTML = ' 刷新失败';
-                    btn.style.color = 'var(--neon-red)';
-
-                    setTimeout(() => {
-                        btn.innerHTML = originalText;
-                        btn.style.color = '';
-                    }, 2000);
-                }
             }
         }
 
@@ -570,12 +759,12 @@
             }
         });
 
-        // 刷新按钮事件监听器
-        document.getElementById('refreshBtn').addEventListener('click', refreshAudioData);
-
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', function() {
             initializeAudioSelects();
+            // 同时加载参考音频列表和克隆音频列表
+            loadReferenceAudios();
+            loadClonedAudios();
         });
     </script>
 </body>

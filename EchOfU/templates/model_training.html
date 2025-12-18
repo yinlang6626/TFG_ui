@@ -284,17 +284,29 @@
                     <div class="form-grid">
                         <div class="form-field">
                             <label class="field-label">模型选择</label>
-                            <select class="neon-input" name="model_choice">
+                            <select class="neon-input" name="model_choice" style="min-width: 120px;">
                                 <option value="SyncTalk">SyncTalk</option>
                                 <option value="ER_NeRF">ER_NeRF</option>
                             </select>
                         </div>
-                        
+
                         <div class="form-field">
-                            <label class="field-label">参考视频/图像</label>
-                            <input type="text" class="neon-input"
-                               placeholder="请输入参考视频/图像路径"
-                               name="ref_video">
+                            <label class="field-label">参考视频</label>
+                            <div style="display: flex; gap: var(--space-2); align-items: stretch;">
+                                <select class="neon-input" name="ref_video" id="refVideoSelect" style="flex: 1; min-width: 200px;">
+                                    <option value="">请选择参考视频...</option>
+                                </select>
+                                <button type="button" class="neon-btn neon-btn-sm" id="refreshVideosBtn" title="刷新视频列表" style="flex-shrink: 0; min-width: 80px;">
+                                    刷新
+                                </button>
+                            </div>
+                            <div style="margin-top: var(--space-2); display: flex; gap: var(--space-2); align-items: center;">
+                                <input type="file" class="neon-input" id="videoUploadInput" accept=".mp4,.avi,.mov,.mkv,.flv,.webm" style="display: none;">
+                                <button type="button" class="neon-btn neon-btn-sm" id="uploadVideoBtn" style="flex-shrink: 0;">
+                                    上传视频
+                                </button>
+                                <span class="field-hint" id="uploadStatus" style="font-size: 0.75rem; margin: 0; flex: 1;"></span>
+                            </div>
                         </div>
                     </div>
                     
@@ -398,6 +410,157 @@
         // Epoch滑块同步
         const epochSlider = document.getElementById('epochSlider');
         const epochValue = document.getElementById('epochValue');
+
+        // 视频管理功能
+        const refVideoSelect = document.getElementById('refVideoSelect');
+        const refreshVideosBtn = document.getElementById('refreshVideosBtn');
+        const uploadVideoBtn = document.getElementById('uploadVideoBtn');
+        const videoUploadInput = document.getElementById('videoUploadInput');
+        const uploadStatus = document.getElementById('uploadStatus');
+
+        // 加载训练视频列表
+        async function loadTrainingVideos() {
+            try {
+                const response = await fetch('/api/training-videos');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // 清空现有选项
+                    refVideoSelect.innerHTML = '<option value="">请选择参考视频...</option>';
+
+                    // 添加视频选项
+                    data.files.forEach(video => {
+                        const option = document.createElement('option');
+                        option.value = video.relative_path;
+                        option.textContent = `${video.filename} (${video.size_mb}MB)`;
+                        refVideoSelect.appendChild(option);
+                    });
+
+                    console.log(`[UI] 加载了 ${data.files.length} 个训练视频`);
+                } else {
+                    console.error('加载视频列表失败:', data.message);
+                }
+            } catch (error) {
+                console.error('加载视频列表出错:', error);
+                uploadStatus.textContent = '加载失败';
+                uploadStatus.style.color = 'var(--neon-pink)';
+            }
+        }
+
+        // 上传视频
+        async function uploadVideo(file) {
+            const formData = new FormData();
+            formData.append('video', file);
+
+            try {
+                uploadStatus.textContent = '上传中...';
+                uploadStatus.style.color = 'var(--neon-blue)';
+                uploadVideoBtn.disabled = true;
+
+                const response = await fetch('/api/upload-training-video', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    uploadStatus.textContent = '上传成功';
+                    uploadStatus.style.color = 'var(--neon-green)';
+
+                    // 刷新视频列表
+                    await loadTrainingVideos();
+
+                    // 选择刚上传的视频
+                    refVideoSelect.value = data.relative_path;
+
+                    // 添加成功日志
+                    addLogEntry(`视频上传成功: ${data.original_name}`, 'success');
+
+                } else {
+                    uploadStatus.textContent = `上传失败: ${data.message}`;
+                    uploadStatus.style.color = 'var(--neon-pink)';
+                    addLogEntry(`视频上传失败: ${data.message}`, 'warning');
+                }
+            } catch (error) {
+                console.error('视频上传出错:', error);
+                uploadStatus.textContent = '上传失败';
+                uploadStatus.style.color = 'var(--neon-pink)';
+                addLogEntry('视频上传失败: 网络错误', 'warning');
+            } finally {
+                uploadVideoBtn.disabled = false;
+                // 清空文件输入
+                videoUploadInput.value = '';
+
+                // 3秒后清除状态
+                setTimeout(() => {
+                    uploadStatus.textContent = '';
+                }, 3000);
+            }
+        }
+
+        // 添加日志条目
+        function addLogEntry(message, type = 'info') {
+            const trainingLog = document.getElementById('trainingLog');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            trainingLog.appendChild(logEntry);
+            trainingLog.scrollTop = trainingLog.scrollHeight;
+        }
+
+        // 刷新视频按钮点击事件
+        refreshVideosBtn.addEventListener('click', async function() {
+            this.disabled = true;
+            this.textContent = '刷新中...';
+
+            await loadTrainingVideos();
+
+            this.disabled = false;
+            this.textContent = '刷新';
+            addLogEntry('视频列表已刷新', 'info');
+        });
+
+        // 上传视频按钮点击事件
+        uploadVideoBtn.addEventListener('click', function() {
+            videoUploadInput.click();
+        });
+
+        // 文件选择变化事件
+        videoUploadInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                console.log('选择了文件:', file.name, file.size, file.type);
+
+                // 检查文件大小 (100MB)
+                const maxSize = 100 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    uploadStatus.textContent = '文件过大 (最大100MB)';
+                    uploadStatus.style.color = 'var(--neon-pink)';
+                    this.value = '';
+                    return;
+                }
+
+                // 检查文件类型
+                const allowedTypes = ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-matroska', 'video/x-flv', 'video/webm'];
+                const fileExt = file.name.toLowerCase().split('.').pop();
+                const allowedExts = ['mp4', 'avi', 'mov', 'mkv', 'flv', 'webm'];
+
+                if (!allowedExts.includes(fileExt)) {
+                    uploadStatus.textContent = '不支持的视频格式';
+                    uploadStatus.style.color = 'var(--neon-pink)';
+                    this.value = '';
+                    return;
+                }
+
+                uploadVideo(file);
+            }
+        });
+
+        // 页面加载时自动加载视频列表
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTrainingVideos();
+        });
         
         epochSlider.addEventListener('input', function() {
             epochValue.textContent = this.value;
