@@ -79,9 +79,9 @@ class AudioProcessor:
             cmd = [
                 "ffmpeg", "-i", video_path,
                 "-vn",  # 禁用视频
-                "-acodec", "pcm_s16le",  # 音频编码
+                "-acodec", "pcm_s24le",  # 音频编码
                 "-ar", "22050",  # 采样率
-                "-ac", "1",  # 单声道
+                "-af", "highpass=80,lowpass=8000,dynaudnorm=p=0.95:s=5",  # 单声道
                 "-y",  # 覆盖输出文件
                 audio_output
             ]
@@ -390,7 +390,17 @@ class VoiceGenerator:
             print(f"[VoiceGenerator] 开始生成语音 (语速: {speed})...")
             print(f"[VoiceGenerator] 模型参数: 语言={language}, 说话人ID={speaker_id}, 输出路径={output_path}")
 
-            model.tts_to_file(text, speaker_id, output_path, speed=speed)
+            model.tts_to_file(
+                text,
+                speaker_id,
+                output_path,
+                speed=speed,
+                sdp_ratio=0.2,        # 韵律相似度
+                noise_scale=0.6,      # 音频变化度
+                noise_scale_w=0.8,    # 音频质量
+                format='WAV'          # 明确格式
+
+            )
 
             # 检查文件是否成功生成
             if os.path.exists(output_path):
