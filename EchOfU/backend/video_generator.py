@@ -7,6 +7,42 @@ import soundfile as sf
 from path_manager import PathManager
 from voice_generator import OpenVoiceService
 
+def run_extract_audio_features(pm, wav_path, output_npy_path):
+    """
+    调用 ER-NeRF 的脚本提取 DeepSpeech 特征。
+    ER-NeRF 推理时不能直接读取 wav，需要先提取为 npy 特征。
+    """
+    print(f"[backend.video_generator] 正在提取音频特征: {wav_path} -> {output_npy_path}")
+    
+    # 获取 DeepSpeech 提取脚本路径: ER-NeRF/data_utils/deepspeech_features/extract_ds_features.py
+    er_nerf_root = pm.get_root_begin_path("ER-NeRF")
+    extract_script = os.path.join(er_nerf_root, "data_utils", "deepspeech_features", "extract_ds_features.py")
+    
+    # 构造命令
+    cmd = [
+        "python", extract_script,
+        "--input", wav_path,
+        "--output", output_npy_path
+    ]
+    
+    try:
+        # 执行提取
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
+        
+        if os.path.exists(output_npy_path):
+            print(f"[backend.video_generator] 特征提取成功")
+            return True
+        else:
+            print(f"[backend.video_generator] 特征提取脚本运行成功但未生成文件")
+            return False
+            
+    except subprocess.CalledProcessError as e:
+        print(f"[backend.video_generator] 特征提取失败: {e.stderr}")
+        return False
+    except Exception as e:
+        print(f"[backend.video_generator] 特征提取发生未知错误: {e}")
+        return False
+
 def generate_video(data):
     """
     模拟视频生成逻辑：接收来自前端的参数，并返回一个视频路径。
@@ -33,14 +69,15 @@ def generate_video(data):
 
     # 获取基础参数
     ref_audio_path = data.get('ref_audio') # 前端传入的参考音频路径
-    text = data.get('target_text')         # 要生成的文本 
+    text = data.get('target_text')         # 要生成的文本 (可选)
     speaker_id = data.get('speaker_id', 'default')
     
     # 当前处理的音频路径 (初始为参考音频)
     current_audio_path = ref_audio_path
 
-    
+   
     # 2. 语音生成逻辑 (Text -> Audio)
+    
     # 如果存在 target_text，则忽略 ref_audio，优先使用文本生成新的语音
     if text and text.strip():
         print(f"[backend.video_generator] 检测到目标文本，正在生成语音: {text}")
@@ -62,8 +99,9 @@ def generate_video(data):
         else:
             print("[backend.video_generator] OpenVoice服务不可用，跳过语音生成")
 
-    
+   
     # 3. [加分项] 音频变调处理 (Pitch Shift)
+    
     pitch_steps = data.get('pitch')
     if pitch_steps and current_audio_path and os.path.exists(current_audio_path):
         try:
@@ -95,8 +133,9 @@ def generate_video(data):
     # 更新 data 中的音频路径，确保后续模型使用最终处理过的音频
     data['ref_audio'] = current_audio_path
 
-    
+   
     # 4. 视频生成模型推理 (SyncTalk / ER-NeRF)
+ 
     if not current_audio_path or not os.path.exists(current_audio_path):
         print("[backend.video_generator] 错误: 没有有效的音频输入，无法生成视频")
         return pm.get_res_video_path("error.mp4")
@@ -163,27 +202,38 @@ def generate_video(data):
             er_nerf_root = pm.get_root_begin_path("ER-NeRF")
             
             # 解析 workspace 名称
-            # data['model_param'] 应该是模型的完整路径 "models/ER-NeRF/task_id"
-            # 我们只需要 task_id 作为 workspace 参数
+            # model_param 应该是模型的完整路径 "models/ER-NeRF/task_id"
             model_path = data.get('model_param', '')
             workspace_name = os.path.basename(model_path.rstrip('/\\'))
             
             # 数据集路径 (推理时需要读取 info.json 等元数据)
-            # 对应训练时的 preprocess_data_path: models/ER-NeRF/data/<task_id>
             dataset_path = pm.get_ernerf_data_path(workspace_name)
             
             if not workspace_name:
                 print("[backend.video_generator] 错误: 无法获取 workspace 名称")
                 return pm.get_res_video_path("error.mp4")
 
+            # [CRITICAL FIX] 提取音频特征 (.wav -> .npy)
+            # ER-NeRF 的 main.py 接收到 --aud 参数时，期望的是一个 .npy 文件 (DeepSpeech特征)
+            # 之前的代码直接传入了 .wav，会导致崩溃。
+            
+            audio_npy_path = current_audio_path.replace('.wav', '.npy')
+            success = run_extract_audio_features(pm, current_audio_path, audio_npy_path)
+            
+            if not success:
+                print("[backend.video_generator] 错误: ER-NeRF 音频特征提取失败")
+                return pm.get_res_video_path("error.mp4")
+
             # 构建 ER-NeRF 推理命令
+            # 注意 --aud 传入的是 .npy 路径
             cmd = [
                 "python", os.path.join(er_nerf_root, "main.py"),
                 dataset_path,
                 "--workspace", model_path, # 使用完整路径
-                "--aud", current_audio_path,
-                "--test",       # 推理模式
-                "--test_train"  # 使用训练集视角
+                "--aud", audio_npy_path,   # 传入 .npy
+                "--test",                  # 推理模式
+                "--test_train",            # 使用训练集视角
+                "--asr_model", "deepspeech" # 显式指定 ASR 模型
             ]
             
             # GPU 设置
@@ -205,16 +255,17 @@ def generate_video(data):
             )
 
             # 结果文件处理
+            # ER-NeRF 结果通常保存在 workspace/results/ 目录下
+            timestamp = int(time.time())
+            video_filename = f"ernerf_{workspace_name}_{timestamp}.mp4"
+            destination_path = pm.get_res_video_path(video_filename)
+
             # 搜索结果策略
             possible_result_dirs = [
                 os.path.join(model_path, "results"),                  # models/ER-NeRF/id/results
                 os.path.join(er_nerf_root, "results", workspace_name), # ER-NeRF/results/id
                 os.path.join(er_nerf_root, workspace_name, "results")  # ER-NeRF/id/results
             ]
-            
-            timestamp = int(time.time())
-            video_filename = f"ernerf_{workspace_name}_{timestamp}.mp4"
-            destination_path = pm.get_res_video_path(video_filename)
             
             found_video = False
             for results_dir in possible_result_dirs:
