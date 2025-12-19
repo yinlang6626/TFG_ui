@@ -1,9 +1,7 @@
 import os
 import subprocess
 import shutil
-import pandas as pd
-import numpy as np
-from path_manager import PathManager
+from .path_manager import PathManager
 
 def generate_dummy_au_csv(data_dir):
     """
@@ -169,3 +167,4 @@ def train_model(data):
 
     print("[backend.model_trainer] 训练流程结束")
     return ref_video_path
+
