@@ -40,8 +40,8 @@ COSYVOICE_PATH = Path(__file__).parent.parent / "CosyVoice"
 sys.path.append(str(COSYVOICE_PATH))
 
 # 导入现有的工具模块
-from .path_manager import PathManager
-from .model_download_manager import ModelDownloadManager, DownloadSource, ModelType
+from path_manager import PathManager
+from model_download_manager import ModelDownloadManager, DownloadSource, ModelType
 
 # CosyVoice导入检查
 try:
