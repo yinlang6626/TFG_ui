@@ -6,24 +6,72 @@ cd TFG_ui
 git submodule update --init --recursive
 ```
 
-### 2. 安装依赖
+### 2. 安装CosyVoice环境
 
+**方法1: 使用Conda（推荐）**
 ```bash
-cd EchOfU
+# 创建Conda环境
+conda create -n cosyvoice -y python=3.10
+conda activate cosyvoice
+
+# 安装依赖（使用阿里云镜像加速）
+cd EchOfU/CosyVoice
+pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
+
+# 返回EchOfU目录
+cd ..
 pip install -r requirements.txt
 ```
 
-### 3. 下载模型
+**方法2: 使用现有Python环境**
+```bash
+cd EchOfU
+pip install -r requirements.txt
 
+# 安装CosyVoice依赖
+cd CosyVoice
+pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
+```
+
+### 3. 下载CosyVoice预训练模型
+
+**自动下载（推荐）**：
 ```python
-from backend.CV_clone import CosyService, ModelType
+from backend.voice_generator import get_voice_service, ServiceConfig
 
-# 创建服务实例（会自动下载模型）
-service = CosyService()
+# 创建服务实例（会自动下载必要模型）
+config = ServiceConfig(enable_vllm=True)  # 启用VLLM加速
+service = get_voice_service(config)
+```
 
-# 或手动下载模型
-service = CosyService()
-service.download_model(ModelType.COSYVOICE3_2512)
+**手动下载**：
+```python
+# modelscope SDK下载（国内推荐）
+from modelscope import snapshot_download
+
+snapshot_download('FunAudioLLM/Fun-CosyVoice3-0.5B-2512', local_dir='CosyVoice/pretrained_models/Fun-CosyVoice3-0.5B')
+snapshot_download('iic/CosyVoice2-0.5B', local_dir='CosyVoice/pretrained_models/CosyVoice2-0.5B')
+snapshot_download('iic/CosyVoice-300M', local_dir='CosyVoice/pretrained_models/CosyVoice-300M')
+snapshot_download('iic/CosyVoice-300M-SFT', local_dir='CosyVoice/pretrained_models/CosyVoice-300M-SFT')
+snapshot_download('iic/CosyVoice-300M-Instruct', local_dir='CosyVoice/pretrained_models/CosyVoice-300M-Instruct')
+snapshot_download('iic/CosyVoice-ttsfrd', local_dir='CosyVoice/pretrained_models/CosyVoice-ttsfrd')
+
+# 可选：安装ttsfrd以获得更好的文本标准化性能
+cd CosyVoice/pretrained_models/CosyVoice-ttsfrd/
+unzip resource.zip -d .
+# 注意：ttsfrd包主要支持Linux，macOS可能需要从源码编译
+```
+
+**HuggingFace下载（海外用户）**：
+```python
+from huggingface_hub import snapshot_download
+
+snapshot_download('FunAudioLLM/Fun-CosyVoice3-0.5B-2512', local_dir='CosyVoice/pretrained_models/Fun-CosyVoice3-0.5B')
+snapshot_download('FunAudioLLM/CosyVoice2-0.5B', local_dir='CosyVoice/pretrained_models/CosyVoice2-0.5B')
+snapshot_download('FunAudioLLM/CosyVoice-300M', local_dir='CosyVoice/pretrained_models/CosyVoice-300M')
+snapshot_download('FunAudioLLM/CosyVoice-300M-SFT', local_dir='CosyVoice/pretrained_models/CosyVoice-300M-SFT')
+snapshot_download('FunAudioLLM/CosyVoice-300M-Instruct', local_dir='CosyVoice/pretrained_models/CosyVoice-300M-Instruct')
+snapshot_download('FunAudioLLM/CosyVoice-ttsfrd', local_dir='CosyVoice/pretrained_models/CosyVoice-ttsfrd')
 ```
 
 ## 基本使用
@@ -136,6 +184,64 @@ service = CosyService(
 )
 ```
 
+## 故障排除
+
+### 常见编译问题
+
+**1. grpcio编译错误**
+```bash
+# 解决方案：使用预编译版本
+pip install --no-build-isolation grpcio==1.57.0 grpcio-tools==1.57.0
+
+# 或者使用阿里云镜像
+pip install grpcio==1.57.0 grpcio-tools==1.57.0 -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
+```
+
+**2. 子模块更新失败**
+```bash
+# 方案1：使用EchOfU统一配置
+cd /path/to/EchOfU
+git submodule update --init --recursive
+
+# 方案2：深度克隆减少下载量
+git submodule update --init --recursive --depth=1
+
+# 方案3：如果Matcha-TTS编译失败，暂时跳过
+cd CosyVoice
+git config submodule.third_party/Matcha-TTS.update none
+```
+
+**3. macOS编译问题**
+```bash
+# 安装必要的系统依赖
+brew install cmake sox
+
+# 确保Xcode命令行工具已安装
+xcode-select --install
+
+# 使用conda环境（推荐）
+conda create -n cosyvoice -y python=3.10
+conda activate cosyvoice
+```
+
+**4. 模型下载失败**
+```bash
+# 使用ModelScope镜像（国内）
+pip install modelscope -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
+
+# 设置环境变量使用国内镜像
+export MODELSCOPE_CACHE=./tmp_modelscope
+```
+
+**5. 内存不足问题**
+```python
+# 使用较小的模型
+config = ServiceConfig(enable_vllm=False)  # 禁用VLLM
+
+# 或使用量化模型
+config = ServiceConfig(enable_vllm=False, model_size="300M")
+```
+
 ## VLLM安装说明
 
 VLLM需要额外的依赖项，请确保：
@@ -157,24 +263,27 @@ pip install vllm --index-url https://download.pytorch.org/whl/cu118
 - 在CPU环境下，VLLM会自动回退到标准模式
 - TensorRT需要Linux环境和额外配置
 
-编译问题：
-方案1: 使用预编译的grpcio包
-# 在CosyVoice目录下，先安装grpcio的预编译版本
-pip install --no-build-isolation grpcio==1.57.0 grpcio-tools==1.57.0
+### 快速测试安装
 
-# 然后再更新子模块
-git submodule update --init --recursive
+验证CosyVoice是否正确安装：
 
-方案2: 如果方案1失败，暂时跳过Matcha-TTS
-# 在EchOfU根目录
-git submodule update --init --recursive --depth=1
+```python
+import sys
+sys.path.append('CosyVoice')
 
-# 如果Matcha-TTS编译失败，可以暂时跳过
-cd CosyVoice
-git config submodule.third_party/Matcha-TTS.update none
+try:
+    from cosyvoice.cli.cosyvoice import CosyVoice
+    from cosyvoice.utils.file_utils import load_wav
 
-方案3: 使用我们的统一配置
-由于我们已经将CosyVoice的子模块添加到EchOfU/.gitmodules中，用户只需要：
+    # 测试模型加载
+    cosyvoice = CosyVoice('pretrained_models/CosyVoice2-0.5B')
+    print("✅ CosyVoice安装成功！")
 
-cd /path/to/EchOfU
-git submodule update --init --recursive
+    # 测试语音合成
+    inference_speech = cosyvoice.inference_sft('你好，欢迎使用CosyVoice！', '中文女')
+    print(f"✅ 语音合成测试成功，生成音频长度: {len(inference_speech)}")
+
+except Exception as e:
+    print(f"❌ CosyVoice安装或测试失败: {e}")
+    print("请检查上述故障排除步骤")
+```
