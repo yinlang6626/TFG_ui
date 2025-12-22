@@ -156,3 +156,25 @@ pip install vllm --index-url https://download.pytorch.org/whl/cu118
 - 建议GPU内存 >= 8GB
 - 在CPU环境下，VLLM会自动回退到标准模式
 - TensorRT需要Linux环境和额外配置
+
+编译问题：
+方案1: 使用预编译的grpcio包
+# 在CosyVoice目录下，先安装grpcio的预编译版本
+pip install --no-build-isolation grpcio==1.57.0 grpcio-tools==1.57.0
+
+# 然后再更新子模块
+git submodule update --init --recursive
+
+方案2: 如果方案1失败，暂时跳过Matcha-TTS
+# 在EchOfU根目录
+git submodule update --init --recursive --depth=1
+
+# 如果Matcha-TTS编译失败，可以暂时跳过
+cd CosyVoice
+git config submodule.third_party/Matcha-TTS.update none
+
+方案3: 使用我们的统一配置
+由于我们已经将CosyVoice的子模块添加到EchOfU/.gitmodules中，用户只需要：
+
+cd /path/to/EchOfU
+git submodule update --init --recursive
