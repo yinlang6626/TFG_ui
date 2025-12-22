@@ -474,4 +474,5 @@ if __name__ == '__main__':
     - port=5001: 使用5001端口（避免与其他服务冲突）
     - host='0.0.0.0': 允许外部访问（不仅限于localhost）
     """
-    app.run(debug=True, port=5001, host='0.0.0.0')
+    # 注意：下载大模型时建议关闭debug模式，避免自动重载中断下载
+    app.run(debug=False, port=5001, host='0.0.0.0')
