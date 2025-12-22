@@ -714,7 +714,8 @@ class VoiceCloner(LoggerMixin):
             # 执行语音克隆
             self.logger.info("[VoiceCloner] 开始生成语音...")
 
-            generated = False
+            # 收集所有音频片段（CosyVoice 可能会分多次生成）
+            audio_segments = []
             for i, audio_data in enumerate(model.inference_zero_shot(
                 request.text,
                 prompt_text,
@@ -723,36 +724,43 @@ class VoiceCloner(LoggerMixin):
                 speed=request.speed
             )):
                 if 'tts_speech' in audio_data:
-                    # 保存生成的音频
-                    if self.audio_processor.save_audio(
-                        audio_data['tts_speech'],
-                        self.model_manager.model_info['sample_rate'],
-                        output_path
-                    ):
-                        result = VoiceCloneResult(
-                            success=True,
-                            audio_path=output_path,
-                            generation_time=time.time() - start_time
-                        )
+                    # 收集音频片段
+                    audio_segments.append(audio_data['tts_speech'])
+                    self.logger.debug(f"[VoiceCloner] 收集音频片段 {i+1}, 长度: {audio_data['tts_speech'].shape}")
 
-                        # 获取音频元数据
-                        try:
-                            info = torchaudio.info(output_path)
-                            result.audio_metadata = AudioMetadata(
-                                file_path=output_path,
-                                duration=info.num_frames / info.sample_rate,
-                                sample_rate=info.sample_rate,
-                                channels=info.num_channels,
-                                file_size=os.path.getsize(output_path)
-                            )
-                        except Exception as e:
-                            self.logger.warning(f"获取音频元数据失败: {e}")
-
-                        generated = True
-                        break
-
-            if not generated:
+            if not audio_segments:
                 raise VoiceGenerationError("语音生成失败：未生成有效音频")
+
+            # 拼接所有音频片段
+            self.logger.info(f"[VoiceCloner] 拼接 {len(audio_segments)} 个音频片段...")
+            combined_audio = torch.cat(audio_segments, dim=-1)
+
+            # 保存拼接后的音频
+            if self.audio_processor.save_audio(
+                combined_audio,
+                self.model_manager.model_info['sample_rate'],
+                output_path
+            ):
+                result = VoiceCloneResult(
+                    success=True,
+                    audio_path=output_path,
+                    generation_time=time.time() - start_time
+                )
+
+                # 获取音频元数据
+                try:
+                    info = torchaudio.info(output_path)
+                    result.audio_metadata = AudioMetadata(
+                        file_path=output_path,
+                        duration=info.num_frames / info.sample_rate,
+                        sample_rate=info.sample_rate,
+                        channels=info.num_channels,
+                        file_size=os.path.getsize(output_path)
+                    )
+                except Exception as e:
+                    self.logger.warning(f"获取音频元数据失败: {e}")
+            else:
+                raise VoiceGenerationError("音频保存失败")
 
             self.logger.info(f"[VoiceCloner] 语音克隆成功: {output_path}")
             self.logger.info(f"  生成时长: {result.audio_metadata.duration:.2f}s")
