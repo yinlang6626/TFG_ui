@@ -187,6 +187,9 @@ class ModelDownloadManager(LoggerMixin):
     """
 
     def __init__(self, path_manager: PathManager = None):
+        # 初始化父类LoggerMixin
+        LoggerMixin.__init__(self)
+
         self.path_manager = path_manager or PathManager()
         self._lock = threading.RLock()
         self._download_futures = {}
