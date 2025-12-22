@@ -50,7 +50,7 @@ except ImportError:
 # Flask应用初始化
 # =============================================================================
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = file_manager.path_manager.get_uploads_path()
+app.config['UPLOAD_FOLDER'] = file_manager.path_manager.get_static_path()
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 限制上传文件大小为100MB
 
 # FileManager初始化时会自动确保目录存在

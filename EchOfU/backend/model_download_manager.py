@@ -30,7 +30,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import hashlib
 
 # 导入PathManager
-from path_manager import PathManager
+from .path_manager import PathManager
 
 
 # ==================== 异常类定义 ====================

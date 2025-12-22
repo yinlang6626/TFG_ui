@@ -3,7 +3,7 @@ from zhipuai import ZhipuAI
 import os
 import shutil
 from .path_manager import PathManager
-from .voice_generator import OpenVoiceService
+from .voice_generator import get_voice_service,ServiceConfig
 # 需要导入 video_generator 中的函数来生成最终视频
 from .video_generator import generate_video
 

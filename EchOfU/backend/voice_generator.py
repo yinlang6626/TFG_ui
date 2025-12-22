@@ -31,7 +31,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
 # 导入CosyVoice核心模块
-from CV_clone import (
+from .CV_clone import (
     VoiceCloneResult, AudioMetadata,
     get_cosy_service
 )

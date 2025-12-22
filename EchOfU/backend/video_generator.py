@@ -5,7 +5,7 @@ import shutil
 import librosa
 import soundfile as sf
 from .path_manager import PathManager
-from .voice_generator import OpenVoiceService
+from .voice_generator import get_voice_service,ServiceConfig
 
 def run_extract_audio_features(pm, wav_path, output_npy_path):
     """
