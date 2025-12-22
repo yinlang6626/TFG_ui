@@ -1,43 +1,104 @@
-# requirements.txt
+# ==============================================================================
+# EchOfU 项目依赖文件
+# 以 CosyVoice 的依赖版本为基准，确保版本兼容性
+# ==============================================================================
+
+# PyTorch 索引配置
+--extra-index-url https://download.pytorch.org/whl/cu121
+--extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
+
+# ==============================================================================
+# EchOfU 核心依赖
+# ==============================================================================
 Flask==3.0.3
 psutil==5.9.8
-gputil==1.4.0  # 添加 GPUtil
+gputil==1.4.0
 SpeechRecognition==3.10.1
 zhipuai==2.0.1
+mutagen==1.46.0
 
-# CosyVoice3 TTS Dependencies
-torch>=2.3.1
-torchaudio>=2.3.1
-transformers>=4.51.3
-numpy>=1.21.0
+# ==============================================================================
+# CosyVoice 核心依赖（版本以 CosyVoice/requirements.txt 为准）
+# ==============================================================================
+# PyTorch 核心库
+torch==2.3.1
+torchaudio==2.3.1
 
-# Model Download Dependencies (choose once)
-modelscope>=1.9.0
+# Transform 和相关库
+transformers==4.51.3
+x-transformers==2.11.24
+diffusers==0.29.0
+
+# 数值计算库
+numpy==1.26.4
+pyarrow==18.1.0
+pandas
+
+# 音频处理
+librosa==0.10.2
+soundfile==0.12.1
+pyworld==0.3.4
+inflect==7.3.1
+
+# 配置管理
+omegaconf==2.3.0
+Hydra-Core==1.3.2
+HyperPyYAML==1.2.2
+
+# ONNX 相关
+onnx==1.16.0
+onnxruntime-gpu==1.18.0 ; sys_platform == 'linux'
+onnxruntime==1.18.0 ; sys_platform == 'darwin' or sys_platform == 'win32'
+
+# TensorRT (仅Linux)
+tensorrt-cu12==10.13.3.9 ; sys_platform == 'linux'
+tensorrt-cu12-bindings==10.13.3.9 ; sys_platform == 'linux'
+tensorrt-cu12-libs==10.13.3.9 ; sys_platform == 'linux'
+
+# ==============================================================================
+# 模型下载相关
+# ==============================================================================
+modelscope==1.20.0
 huggingface_hub>=0.16.0
+gdown==5.1.0
+wget==3.2
 
-# Audio Processing
-librosa>=0.9.0
-soundfile>=0.12.0
+# ==============================================================================
+# Web服务相关
+# ==============================================================================
+fastapi==0.115.6
+fastapi-cli==0.0.4
+uvicorn==0.30.0
+gradio==5.4.0
 
-# Optional: Better audio metadata support
-mutagen>=1.46.0
-
-# CosyVoice Specific Dependencies
-omegaconf>=2.3.0
+# ==============================================================================
+# 深度学习相关
+# ==============================================================================
+lightning==2.2.4
+deepspeed==0.15.1 ; sys_platform == 'linux'
 einops>=0.7.0
-loguru>=0.7.0
-onnx>=1.15.0
-onnxruntime>=1.18.0
-
-# VLLM Acceleration Support (optional, for improved performance)
 vllm>=0.4.0
 
-# For advanced users: TensorRT acceleration (Linux only)
-# tensorrt>=10.13.0
+# ==============================================================================
+# 其他工具库
+# ==============================================================================
+conformer==0.3.2
+protobuf==4.25
+grpcio==1.57.0
+grpcio-tools==1.57.0
+networkx==3.1
+openai-whisper==20231117
+pydantic==2.7.0
+rich==13.7.1
+wetext==0.0.4
 
-# Development and Testing
+# 日志和显示
+loguru>=0.7.0
+matplotlib==3.7.5
+tensorboard==2.14.0
+
+# ==============================================================================
+# 开发和测试
+# ==============================================================================
 pytest>=7.0.0
 pytest-cov>=4.0.0
-
-#缺少的：
-pandas
