@@ -89,7 +89,7 @@ einops>=0.7.0
 # Matcha-TTS 特定依赖
 # ==============================================================================
 phonemizer  # Matcha-TTS需要
-#piper_phonemize  # Matcha-TTS需要
+#piper_phonemize  # Matcha-TTS需要,但是需要 Python >=3.11，已移除，使用标准 phonemizer 替代
 Unidecode  # Matcha-TTS需要
 Cython  # Matcha-TTS需要
 rootutils  # Matcha-TTS需要，用于项目根目录标准化
