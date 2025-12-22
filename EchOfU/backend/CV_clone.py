@@ -523,10 +523,15 @@ class VoiceCloner(LoggerMixin):
                 output_path = self.audio_processor.get_output_path()
 
             # 准备提示文本 - 使用CosyVoice3推荐的高级提示格式
+            # 必需的前缀，用于防止提示词内容被读入音频
+            prefix_prompt = "You are a helpful assistant.<|endofprompt|>"
+
             if request.prompt_text:
-                prompt_text = request.prompt_text
+                # 用户提供了自定义提示词，需要在前面添加必需的前缀
+                prompt_text = f"{prefix_prompt} {request.prompt_text}"
             else:
-                prompt_text = "You are a helpful assistant. Please speak the following content naturally.<|endofprompt|>"
+                # 使用默认提示词
+                prompt_text = f"{prefix_prompt} Please speak the following content naturally."
 
             # 执行语音克隆
             self.logger.info("[VoiceCloner] 开始生成语音...")
