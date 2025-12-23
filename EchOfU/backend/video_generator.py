@@ -5,7 +5,7 @@ import shutil
 import librosa
 import soundfile as sf
 from .path_manager import PathManager
-from .voice_generator import OpenVoiceService
+from .voice_generator import get_voice_service,ServiceConfig
 
 def run_extract_audio_features(pm, wav_path, output_npy_path):
     """
@@ -60,44 +60,46 @@ def generate_video(data):
     res_voices_dir = pm.ensure_directory(pm.get_res_voice_path())
     res_videos_dir = pm.ensure_directory(pm.get_res_video_path())
 
-    # 实例化 OpenVoice 服务（使用标准单例方法）
-    try:
-        ov = OpenVoiceService.get_instance()
-    except Exception as e:
-        print(f"[backend.video_generator] OpenVoice服务初始化警告: {e}")
-        ov = None
-
     # 获取基础参数
     ref_audio_path = data.get('ref_audio') # 前端传入的参考音频路径
     text = data.get('target_text')         # 要生成的文本 (可选)
-    speaker_id = data.get('speaker_id', 'default')
-    
+
     # 当前处理的音频路径 (初始为参考音频)
     current_audio_path = ref_audio_path
 
-   
-    # 2. 语音生成逻辑 (Text -> Audio)
-    
-    # 如果存在 target_text，则忽略 ref_audio，优先使用文本生成新的语音
+    # 2. 语音生成逻辑 (Text -> Audio) - 使用新的CosyVoice系统
     if text and text.strip():
-        print(f"[backend.video_generator] 检测到目标文本，正在生成语音: {text}")
-        if ov:
-            # 生成语音 (返回临时路径)
-            generated_temp_path = ov.generate_speech(text, speaker_id)
-            
-            if generated_temp_path and os.path.exists(generated_temp_path):
-                # 移动到统一的 res_voices 目录
-                timestamp = int(time.time())
-                filename = f"tts_{speaker_id}_{timestamp}.wav"
-                target_audio_path = pm.get_res_voice_path(filename)
-                
-                shutil.move(generated_temp_path, target_audio_path)
-                current_audio_path = target_audio_path
-                print(f"[backend.video_generator] 语音生成成功，已保存至: {current_audio_path}")
+        print(f"[backend.video_generator] 检测到目标文本，正在使用CosyVoice生成语音: {text}")
+        try:
+            # 创建服务实例
+            config = ServiceConfig(enable_vllm=True)
+            service = get_voice_service(config)
+
+            # 使用path_manager处理路径转换
+            if ref_audio_path and not os.path.isabs(ref_audio_path):
+                ref_audio_path = pm.get_static_path(ref_audio_path)
+
+            # 生成语音
+            timestamp = int(time.time())
+            output_filename = f"tts_video_{timestamp}.wav"
+
+            # 调用 CosyVoice 生成
+            result = service.clone_voice(
+                text=text,
+                reference_audio=ref_audio_path if ref_audio_path else None,
+                speed=1.0,
+                output_filename=output_filename
+            )
+
+            if result.is_success:
+                current_audio_path = result.audio_path
+                print(f"[backend.video_generator] CosyVoice语音生成成功: {current_audio_path}")
             else:
-                print("[backend.video_generator] 语音生成失败，将尝试使用原始参考音频")
-        else:
-            print("[backend.video_generator] OpenVoice服务不可用，跳过语音生成")
+                print(f"[backend.video_generator] CosyVoice语音生成失败: {result.error_message}")
+                print("[backend.video_generator] 将尝试使用原始参考音频")
+        except Exception as e:
+            print(f"[backend.video_generator] CosyVoice服务错误: {e}")
+            print("[backend.video_generator] 将尝试使用原始参考音频")
 
    
     # 3. [加分项] 音频变调处理 (Pitch Shift)
@@ -229,11 +231,15 @@ def generate_video(data):
             cmd = [
                 "python", os.path.join(er_nerf_root, "main.py"),
                 dataset_path,
-                "--workspace", model_path, # 使用完整路径
-                "--aud", audio_npy_path,   # 传入 .npy
-                "--test",                  # 推理模式
-                "--test_train",            # 使用训练集视角
-                "--asr_model", "deepspeech" # 显式指定 ASR 模型
+                "--workspace", model_path,   # 使用完整路径
+                "--aud", audio_npy_path,     # 传入 .npy (DeepSpeech特征)
+                "--test",                    # 推理模式
+                "-O",                        # FP16加速等优化
+                "--test_train",              # 使用训练集视角
+                "--asr_model", "deepspeech", # 显式指定ASR模型
+                "--torso",                   # 渲染身体 (假设模型已包含身体)
+                "--smooth_path",             # [关键] 开启相机路径平滑
+                "--smooth_path_window", "7"  # 平滑窗口大小
             ]
             
             # GPU 设置
@@ -255,7 +261,7 @@ def generate_video(data):
             )
 
             # 结果文件处理
-            # ER-NeRF 结果通常保存在 workspace/results/ 目录下
+            # ER-NeRF 结果保存在 workspace/results/ 目录下
             timestamp = int(time.time())
             video_filename = f"ernerf_{workspace_name}_{timestamp}.mp4"
             destination_path = pm.get_res_video_path(video_filename)
@@ -271,16 +277,12 @@ def generate_video(data):
             for results_dir in possible_result_dirs:
                 if os.path.exists(results_dir):
                     # 查找最新的 mp4
-                    mp4_files = []
-                    for root, dirs, files in os.walk(results_dir):
-                        for f in files:
-                            if f.endswith('.mp4'):
-                                mp4_files.append(os.path.join(root, f))
-                    
+                    mp4_files = [f for f in os.listdir(results_dir) if f.endswith('.mp4')]
                     if mp4_files:
-                        latest_video = max(mp4_files, key=os.path.getctime)
+                        latest_video = max(mp4_files, key=lambda f: os.path.getctime(os.path.join(results_dir, f)))
+                        source_video_path = os.path.join(results_dir, latest_video)
                         print(f"[backend.video_generator] 找到视频: {latest_video}")
-                        shutil.copy(latest_video, destination_path)
+                        shutil.copy(source_video_path, destination_path)
                         found_video = True
                         break
             
@@ -303,3 +305,4 @@ def generate_video(data):
     default_path = pm.get_res_video_path("out.mp4")
     print(f"[backend.video_generator] 未匹配模型或发生错误，返回默认路径: {default_path}")
     return default_path
+
